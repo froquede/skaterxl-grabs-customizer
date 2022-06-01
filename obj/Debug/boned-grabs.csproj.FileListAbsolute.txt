@@ -1,0 +1,5 @@
+S:\boned-grabs\boned-grabs\bin\Debug\boned-grabs.dll
+S:\boned-grabs\boned-grabs\bin\Debug\boned-grabs.pdb
+S:\boned-grabs\boned-grabs\obj\Debug\boned-grabs.csproj.CoreCompileInputs.cache
+S:\boned-grabs\boned-grabs\obj\Debug\boned-grabs.dll
+S:\boned-grabs\boned-grabs\obj\Debug\boned-grabs.pdb

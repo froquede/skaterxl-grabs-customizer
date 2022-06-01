@@ -1,0 +1,11 @@
+{
+  "Id": "boned-grabs",
+  "DisplayName": "Boned Grabs",
+  "Author": "froquede",
+  "Version": "1.0.0",
+  "ManagerVersion": "0.22.5.0",
+  "Requirements": [],
+  "LoadAfter": [],
+  "AssemblyName": "boned-grabs.dll",
+  "EntryMethod": "boned_grabs.Main.Load"
+}
