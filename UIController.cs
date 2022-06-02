@@ -55,7 +55,7 @@ namespace boned_grabs
             if (showMainMenu)
             {
                 GUI.backgroundColor = Main.settings.BGColor;
-                MainMenuRect = GUILayout.Window(420, MainMenuRect, MainMenu, "<b>Boned Grabs v1.0.0</b>");
+                MainMenuRect = GUILayout.Window(420, MainMenuRect, MainMenu, "<b>Boned Grabs v1.1.0</b>");
             }
         }
 
@@ -92,6 +92,11 @@ namespace boned_grabs
             GUILayout.Label("<b>Interpolation speed multiplier (default is 3)</b>", GUILayout.Height(24f));
             GUILayout.BeginVertical("Box");
             Main.settings.GrabBoardBoned_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_speed, .1f, 12f, 3f, "Grab Speed");
+            GUILayout.EndVertical();
+
+            GUILayout.BeginVertical("Box");
+            Main.settings.GrabBoardBoned_left_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_left_speed, 0f, 100f, 1f, "Left foot to skate speed");
+            Main.settings.GrabBoardBoned_right_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_right_speed, 0f, 100f, 1f, "Right feet to skate speed");
             GUILayout.EndVertical();
         }
 

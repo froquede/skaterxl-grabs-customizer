@@ -50,6 +50,9 @@
       <Private>False</Private>
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
+    <Reference Include="Rewired_Core">
+      <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\Rewired_Core.dll</HintPath>
+    </Reference>
     <Reference Include="SkaterXL.Core">
       <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\SkaterXL.Core.dll</HintPath>
       <Private>False</Private>
