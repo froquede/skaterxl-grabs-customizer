@@ -12,6 +12,7 @@ namespace boned_grabs
     class BonedGrabs : MonoBehaviour
     {
         public static BonedGrabs Instance { get; private set; }
+        public bool run;
 
         private void Start()
         {
@@ -29,6 +30,17 @@ namespace boned_grabs
 
                 PlayerController.Instance.ikController.LeftIKWeight(Main.settings.GrabBoardBoned_left_speed);
                 PlayerController.Instance.ikController.RightIKWeight(Main.settings.GrabBoardBoned_right_speed);
+                /*run = true;*/
+            }
+            else
+            {
+                /*if (PlayerController.Instance.currentStateEnum.ToString() == "InAir" && run) {
+                    PlayerController.Instance.boardController.boardControlTransform.localPosition = new Vector3(0f,0f,0f);
+                    PlayerController.Instance.boardController.boardControlTransform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+                    run = false;
+                }*/
+                PlayerController.Instance.ikController.LeftIKWeight(1f);
+                PlayerController.Instance.ikController.RightIKWeight(1f);
             }
         }
     }
