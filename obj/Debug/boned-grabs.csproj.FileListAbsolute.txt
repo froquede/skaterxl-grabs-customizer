@@ -4,5 +4,3 @@ S:\boned-grabs\boned-grabs\obj\Debug\boned-grabs.csproj.CoreCompileInputs.cache
 S:\boned-grabs\boned-grabs\obj\Debug\boned-grabs.dll
 S:\boned-grabs\boned-grabs\obj\Debug\boned-grabs.pdb
 S:\boned-grabs\boned-grabs\obj\Debug\boned-grabs.csproj.AssemblyReference.cache
-S:\boned-grabs\boned-grabs\bin\Debug\Rewired_Core.dll
-S:\boned-grabs\boned-grabs\obj\Debug\boned-grabs.csproj.CopyComplete

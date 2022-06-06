@@ -7,7 +7,7 @@ using RapidGUI;
 using UnityEngine;
 using UnityModManagerNet;
 
-namespace boned_grabs
+namespace grabs_customizer
 {
     class UIController : MonoBehaviour
     {
@@ -55,7 +55,7 @@ namespace boned_grabs
             if (showMainMenu)
             {
                 GUI.backgroundColor = Main.settings.BGColor;
-                MainMenuRect = GUILayout.Window(420, MainMenuRect, MainMenu, "<b>Boned Grabs v1.1.0</b>");
+                MainMenuRect = GUILayout.Window(420, MainMenuRect, MainMenu, "<b>Grabs Customizer v1.2.0</b>");
             }
         }
 
@@ -75,29 +75,34 @@ namespace boned_grabs
 
             GUILayout.EndVertical();
 
-            GUILayout.Label("<b>Board offset in world units</b>", GUILayout.Height(24f));
             GUILayout.BeginVertical("Box");
+            GUILayout.Label("<b>Board offset in world units</b>", GUILayout.Height(32f));
             Main.settings.GrabBoardBoned_x = RGUI.SliderFloat(Main.settings.GrabBoardBoned_x, -20f, 20f, 0f, "Board Offset X");
             Main.settings.GrabBoardBoned_y = RGUI.SliderFloat(Main.settings.GrabBoardBoned_y, -20f, 20f, 0f, "Board Offset Y");
             Main.settings.GrabBoardBoned_z = RGUI.SliderFloat(Main.settings.GrabBoardBoned_z, -20f, 20f, 0f, "Board Offset Z");
-            GUILayout.EndVertical();
-
-            GUILayout.Label("<b>Rotation offset in degrees (-360 to 360)</b>", GUILayout.Height(24f));
-            GUILayout.BeginVertical("Box");
+            
+            GUILayout.Label("<b></b>", GUILayout.Height(16f));
+            GUILayout.Label("<b>Rotation offset in degrees (-360 to 360)</b>", GUILayout.Height(32f));
             Main.settings.GrabBoardBoned_rotation_x = RGUI.SliderFloat(Main.settings.GrabBoardBoned_rotation_x, -360f, 360f, 0f, "Board Rotation X");
             Main.settings.GrabBoardBoned_rotation_y = RGUI.SliderFloat(Main.settings.GrabBoardBoned_rotation_y, -360f, 360f, 0f, "Board Rotation Y");
             Main.settings.GrabBoardBoned_rotation_z = RGUI.SliderFloat(Main.settings.GrabBoardBoned_rotation_z, -360f, 360f, 0f, "Board Rotation Z");
+
+            GUILayout.Label("<b></b>", GUILayout.Height(16f));
+            Main.settings.GrabBoardBoned_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_speed, 0.1f, 8f, 3f, "Offset animation multiplier");
             GUILayout.EndVertical();
 
-            GUILayout.Label("<b>Interpolation speed multiplier (default is 3)</b>", GUILayout.Height(24f));
+            GUILayout.Label("<b></b>", GUILayout.Height(16f));
             GUILayout.BeginVertical("Box");
-            Main.settings.GrabBoardBoned_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_speed, .1f, 12f, 3f, "Grab Speed");
+            GUILayout.Label("<b>Weight of the IK feet for following the skate (0 will detach board)</b>", GUILayout.Height(32f));
+            Main.settings.GrabBoardBoned_left_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_left_speed, 0f, 2f, 1f, "Left foot IK weight");
+            Main.settings.GrabBoardBoned_right_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_right_speed, 0f, 2f, 1f, "Right foot IK weight");
             GUILayout.EndVertical();
 
+            /*GUILayout.Label("<b>Weight of the IK hands for following the skate (0 will detach hands)</b>", GUILayout.Height(24f));
             GUILayout.BeginVertical("Box");
-            Main.settings.GrabBoardBoned_left_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_left_speed, 0f, 100f, 1f, "Left foot to skate speed");
-            Main.settings.GrabBoardBoned_right_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_right_speed, 0f, 100f, 1f, "Right feet to skate speed");
-            GUILayout.EndVertical();
+            Main.settings.GrabBoardBoned_left_hand_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_left_hand_speed, 0f, 2f, 1f, "Left hand IK weight");
+            Main.settings.GrabBoardBoned_right_hand_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_right_hand_speed, 0f, 2f, 1f, "Right hand IK weight");
+            GUILayout.EndVertical();*/
         }
 
         private void Title()

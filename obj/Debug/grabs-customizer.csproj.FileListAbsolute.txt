@@ -1,0 +1,6 @@
+S:\boned-grabs\boned-grabs\obj\Debug\grabs-customizer.csproj.AssemblyReference.cache
+S:\boned-grabs\boned-grabs\obj\Debug\grabs-customizer.csproj.CoreCompileInputs.cache
+S:\boned-grabs\boned-grabs\bin\Debug\grabs-customizer.dll
+S:\boned-grabs\boned-grabs\bin\Debug\grabs-customizer.pdb
+S:\boned-grabs\boned-grabs\obj\Debug\grabs-customizer.dll
+S:\boned-grabs\boned-grabs\obj\Debug\grabs-customizer.pdb
