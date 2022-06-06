@@ -23,10 +23,18 @@ namespace boned_grabs
         public float GrabBoardBoned_rotation_y = 0f;
         public float GrabBoardBoned_rotation_z = 0f;
 
-        public float GrabBoardBoned_speed = 6f;
+        public float GrabBoardBoned_speed = 3f;
 
         public float GrabBoardBoned_left_speed = 1f;
         public float GrabBoardBoned_right_speed = 1f;
+
+        public float GrabBoardBoned_left_knee = 1f;
+        public float GrabBoardBoned_right_knee = 1f;
+
+        public float GrabBoardBoned_left_hand_speed = 1f;
+        public float GrabBoardBoned_right_hand_speed = 1f;
+
+        public int GrabBoardBoned_animation_frames = 36;
 
         public void OnChange()
         {

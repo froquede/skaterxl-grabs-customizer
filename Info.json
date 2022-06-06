@@ -2,10 +2,11 @@
   "Id": "boned-grabs",
   "DisplayName": "Boned Grabs",
   "Author": "froquede",
-  "Version": "1.0.0",
+  "Version": "1.2.0",
   "ManagerVersion": "0.22.5.0",
   "Requirements": [],
-  "LoadAfter": [],
+  "LoadAfter": [ "XXLMod3" ],
+  "HomePage": "https://github.com/roquef/skaterxl-boned-grabs",
   "AssemblyName": "boned-grabs.dll",
   "EntryMethod": "boned_grabs.Main.Load"
 }

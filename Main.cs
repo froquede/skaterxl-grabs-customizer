@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -17,37 +18,38 @@ namespace boned_grabs
 
         static bool Unload(UnityModManager.ModEntry modEntry)
         {
-            harmonyInstance.UnpatchAll();
-            GameObject.Destroy(BG);
-            GameObject.Destroy(UI);
+            // harmonyInstance.UnpatchAll();
+            UnityEngine.Object.Destroy(BG);
+            UnityEngine.Object.Destroy(UI);
+            BG = null;
+            UI = null;
+
             return true;
         }
 
         static bool Load(UnityModManager.ModEntry modEntry)
         {
             harmonyInstance = new Harmony(modEntry.Info.Id);
-            harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
             settings = UnityModManager.ModSettings.Load<Settings>(modEntry);
-            modEntry.OnUnload = Unload;
+            settings.Save(modEntry);
 
             BG = new GameObject().AddComponent<BonedGrabs>();
             UI = new GameObject().AddComponent<UIController>();
             UnityEngine.Object.DontDestroyOnLoad(BG);
             UnityEngine.Object.DontDestroyOnLoad(UI);
 
+            // harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+
+            modEntry.OnUnload = Unload;
             Main.modEntry = modEntry;
 
             UnityModManager.Logger.Log("Loaded " + modEntry.Info.Id);
-
             return true;
         }
+
         private static void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            GUILayout.Box("<b>Background Color</b>", GUILayout.Height(21f));
-            settings.BGColor.r = RapidGUI.RGUI.SliderFloat(settings.BGColor.r, 0f, 1f, 0f, "Red");
-            settings.BGColor.g = RapidGUI.RGUI.SliderFloat(settings.BGColor.g, 0f, 1f, 0f, "Green");
-            settings.BGColor.b = RapidGUI.RGUI.SliderFloat(settings.BGColor.b, 0f, 1f, 0f, "Blue");
-            settings.Draw(modEntry);
+            
         }
 
         private static void OnSaveGUI(UnityModManager.ModEntry modEntry)

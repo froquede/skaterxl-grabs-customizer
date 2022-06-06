@@ -52,11 +52,16 @@
     </Reference>
     <Reference Include="Rewired_Core">
       <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\Rewired_Core.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="SkaterXL.Core">
       <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\SkaterXL.Core.dll</HintPath>
       <Private>False</Private>
       <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="SkaterXL.Data">
+      <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\SkaterXL.Data.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System">
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -176,4 +181,18 @@
     <None Include="Info.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+      if "$(ConfigurationName)"=="Debug" (
+        copy /Y "$(TargetDir)boned-grabs.dll" "T:\SteamLibrary\steamapps\common\Skater XL\Mods\boned-grabs\boned-grabs.dll"
+        copy /Y "$(ProjectDir)Info.json" "T:\SteamLibrary\steamapps\common\Skater XL\Mods\boned-grabs\Info.json"
+      )
+
+      if "$(ConfigurationName)"=="Release" (
+        del /Q /F "T:\SteamLibrary\steamapps\common\Skater XL\Mods\boned-grabs\"
+        copy /Y "$(TargetDir)boned-grabs.dll" "T:\SteamLibrary\steamapps\common\Skater XL\Mods\boned-grabs\boned-grabs.dll"
+        copy /Y "$(ProjectDir)Info.json" "T:\SteamLibrary\steamapps\common\Skater XL\Mods\boned-grabs\Info.json"
+      )
+    </PostBuildEvent>
+  </PropertyGroup>
 </Project>

@@ -1,0 +1,6 @@
+S:\boned-grabs\boned-grabs\bin\Release\boned-grabs.dll
+S:\boned-grabs\boned-grabs\bin\Release\boned-grabs.pdb
+S:\boned-grabs\boned-grabs\obj\Release\boned-grabs.csproj.AssemblyReference.cache
+S:\boned-grabs\boned-grabs\obj\Release\boned-grabs.csproj.CoreCompileInputs.cache
+S:\boned-grabs\boned-grabs\obj\Release\boned-grabs.dll
+S:\boned-grabs\boned-grabs\obj\Release\boned-grabs.pdb
