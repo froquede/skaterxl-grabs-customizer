@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityModManagerNet;
 
-namespace boned_grabs
+namespace grabs_customizer
 {
     [Serializable]
     public class Settings : UnityModManager.ModSettings, IDrawable

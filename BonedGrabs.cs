@@ -1,35 +1,37 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityModManagerNet;
 using SkaterXL.Core;
-using SkaterXL.Data;
 using RootMotion.Dynamics;
 
-namespace boned_grabs
+namespace grabs_customizer
 {
     class BonedGrabs : MonoBehaviour
     {
         public static BonedGrabs Instance { get; private set; }
-        public int run;
-        public int limit = 36;
+
+        int run;
+        int limit = 36;
         float anim_ratio = 1.5f;
         string last_state;
         bool save_last_pos = true;
-        Vector3 last_pos;
-        Vector3 last_rot;
         bool fake_bail = false;
         bool impact = false;
+        bool debug = true;
+        bool popped = false;
+        Vector3 last_pos;
+        Vector3 last_rot;
 
         private void Start()
         {
+            reset();
+            Log("Controller started");
+        }
+
+        void reset() {
             run = limit + 1;
             PlayerController.Instance.playerSM.StartSM();
             PlayerController.Instance.respawn.DoRespawn();
-            UnityModManager.Logger.Log("Controller started");
         }
 
         public void Update()
@@ -40,16 +42,15 @@ namespace boned_grabs
             {
                 if (save_last_pos)
                 {
-                    UnityModManager.Logger.Log("Saved last pos");
+                    Log("Saved last pos");
                     last_pos = PlayerController.Instance.boardController.boardControlTransform.localPosition;
                     last_rot = PlayerController.Instance.boardController.boardControlTransform.localRotation.eulerAngles;
                     save_last_pos = false;
                 }
-                
-                PlayerController.Instance.SetTurningMode(InputController.TurningMode.InAir);
+
                 DoGrabOffset();
-                PlayerController.Instance.respawn.behaviourPuppet.puppetMaster.muscles[3].transform.LookAt(PlayerController.Instance.boardController.transform.position);
                 run = 0;
+                popped = false;
                 fake_bail = false;
                 impact = false;
             }
@@ -57,29 +58,36 @@ namespace boned_grabs
             {
                 if (run <= limit)
                 {
-                    if (run == 0 && IsInAir()) {
-                        PlayerController.Instance.playerSM.OnRespawnSM();
-                        EventManager.Instance.EnterAir();
-                        PlayerController.Instance.ToggleFlipTrigger(false);
-                        PlayerController.Instance.BoardFreezedAfterRespawn = false;
-                        PlayerController.Instance.SetTurningMode(InputController.TurningMode.InAir);
+                    if(run == 0)
+                    {
+                        PlayerController.Instance.ikController.LeftIKWeight(1f);
+                        PlayerController.Instance.ikController.RightIKWeight(1f);
+
+                        if (IsInAir()) {
+                            PlayerController.Instance.playerSM.OnRespawnSM();
+                            EventManager.Instance.EnterAir();
+                            PlayerController.Instance.ToggleFlipTrigger(false);
+                            PlayerController.Instance.BoardFreezedAfterRespawn = false;
+                            PlayerController.Instance.SetTurningMode(InputController.TurningMode.InAir);
+                            PlayerController.Instance.boardController.boardControlTransform.localPosition = last_pos;
+                        }
                     }
 
-                    PlayerController.Instance.ikController.LeftIKWeight(Main.settings.GrabBoardBoned_left_speed);
-                    PlayerController.Instance.ikController.RightIKWeight(Main.settings.GrabBoardBoned_right_speed);
                     if (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
 
-                    var rotation = PlayerController.Instance.boardController.boardControlTransform.localRotation;
-                    Vector3 lerpedRotation = Vector3.Lerp(rotation.eulerAngles, rotation.eulerAngles + new Vector3(0, 120, 0), Time.deltaTime * Main.settings.GrabBoardBoned_speed);
-                    PlayerController.Instance.boardController.boardControlTransform.localRotation = Quaternion.Euler(0, lerpedRotation.y, 0);
-                    if(run > limit / anim_ratio)
+                    if (fake_bail)
                     {
-                        PlayerController.Instance.animationController.ForceBeginPop();
-                        // PlayerController.Instance.animationController.ForceAnimation("Pop");
-                        PlayerController.Instance.boardController.boardControlTransform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.localPosition, PlayerController.Instance.boardController.boardControlTransform.localPosition + new Vector3(0, -.6f, 0), Time.deltaTime / 1000);
+                        if (run > limit / anim_ratio)
+                        {
+                            if (!popped)
+                            {
+                                PlayerController.Instance.animationController.ForceAnimation("Pop");
+                                popped = true;
+                            }
+                        }
+                        PlayerController.Instance.boardController.boardControlTransform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.localPosition, last_pos, Time.deltaTime / 1000);
+                        PlayerController.Instance.boardController.UpdateBoardPosition();
                     }
-                    // PlayerController.Instance.boardController.boardControlTransform.localPosition = new Vector3(0, -.9f, 0);
-                    PlayerController.Instance.boardController.UpdateBoardPosition();
 
                     run++;
                 }
@@ -87,63 +95,8 @@ namespace boned_grabs
                 {
                     if (run == limit + 1)
                     {
-                        UnityModManager.Logger.Log("Catch, over limit ");
-
-                        PlayerController.Instance.boardController.boardControlTransform.localRotation = Quaternion.Euler(0, 0, 0);
-                        // PlayerController.Instance.SetBoardToMaster();
-                        UnityModManager.Logger.Log(PlayerController.Instance.playerSM.IsInBailStateSM().ToString());
-                        PlayerController.Instance.boardController.CatchRotation();
-                        PlayerController.Instance.boardController.UpdateBoardPosition();
-                        PlayerController.Instance.AnimOllieTransition(false);
-                        PlayerController.Instance.AnimSetupTransition(false);
-                        PlayerController.Instance.boardController.ReduceImpactBounce();
-                        PlayerController.Instance.skaterController.AddCollisionOffset();
-                        PlayerController.Instance.boardController.ForceBoardPosition();
-                        EventManager.Instance.OnCatched(true, true);
-                        PlayerController.Instance.AnimCaught(true);
-                        PlayerController.Instance.cameraController.NeedToSlowLerpCamera = false;
-                        PlayerController.Instance.ToggleFlipTrigger(false);
-                        PlayerController.Instance.animationController.ScaleAnimSpeed(0.05f);
-                        PlayerController.Instance.SetLeftKneeBendWeightManually(1f);
-                        PlayerController.Instance.SetRightKneeBendWeightManually(1f);
-                        PlayerController.Instance.boardController.LeaveFlipMode();
-                        PlayerController.Instance.boardController.SetCatchForwardRotation();
-                        SoundManager.Instance.PlayCatchSound();
-                        MonoBehaviourSingleton<PlayerController>.Instance.SetBoardBackwards();
-                        MonoBehaviourSingleton<PlayerController>.Instance.CorrectHandIKRotation(MonoBehaviourSingleton<PlayerController>.Instance.GetBoardBackwards());
-                        MonoBehaviourSingleton<PlayerController>.Instance.boardController.ResetAll();
-                        PlayerController.Instance.SetRightIKLerpTarget(0f);
-                        PlayerController.Instance.SetLeftIKLerpTarget(0f);
-                        PlayerController.Instance.SetRightIKRotationWeight(1f);
-                        PlayerController.Instance.SetLeftIKRotationWeight(1f);
-                        PlayerController.Instance.boardController.ResetAll();
-                        PlayerController.Instance.SetMaxSteeze(0f);
-                        PlayerController.Instance.AnimCaught(true);
-                        PlayerController.Instance.SetIKLerpSpeed(4f);
-                        PlayerController.Instance.CrossFadeAnimation("Extend", 0.15f);
-                        PlayerController.Instance.OnExtendAnimEnter();
-                        PlayerController.Instance.AnimRelease(false);
-                        PlayerController.Instance.OnExtendAnimEnter();
-                        PlayerController.Instance.SetCatchForwardRotation();
-
-                        MonoBehaviourSingleton<PlayerController>.Instance.currentStateEnum = PlayerController.CurrentState.Riding;
-                        MonoBehaviourSingleton<PlayerController>.Instance.cameraController.NeedToSlowLerpCamera = false;
-                        MonoBehaviourSingleton<PlayerController>.Instance.AnimSetRollOff(false);
-                        MonoBehaviourSingleton<EventManager>.Instance.EndTrickCombo(false, false);
-                        MonoBehaviourSingleton<PlayerController>.Instance.ToggleFlipColliders(false);
-                        MonoBehaviourSingleton<SoundManager>.Instance.PlayShoeMovementSound();
-                        MonoBehaviourSingleton<PlayerController>.Instance.ResetBoardCenterOfMass();
-                        MonoBehaviourSingleton<PlayerController>.Instance.ResetBackTruckCenterOfMass();
-                        MonoBehaviourSingleton<PlayerController>.Instance.ResetFrontTruckCenterOfMass();
-                        MonoBehaviourSingleton<PlayerController>.Instance.skaterController.InitializeSkateRotation();
-
-                        MonoBehaviourSingleton<PlayerController>.Instance.AnimSetRollOff(false);
-                        MonoBehaviourSingleton<PlayerController>.Instance.AnimSetNoComply(false);
-                        MonoBehaviourSingleton<PlayerController>.Instance.skaterController.InitializeSkateRotation();
-                        MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterRigidbody.angularVelocity = Vector3.zero;
-
-                        //PlayerController.Instance.playerSM.OnRespawnSM();
-
+                        Log("Catch, over limit ");
+                        if(fake_bail) Catch();
                         save_last_pos = true;
                         run++;
                     }
@@ -151,11 +104,60 @@ namespace boned_grabs
             }
         }
 
+        void Catch() {
+            PlayerController.Instance.boardController.boardControlTransform.localRotation = Quaternion.Euler(0, 0, 0);
+            Log(PlayerController.Instance.playerSM.IsInBailStateSM().ToString());
+            PlayerController.Instance.boardController.CatchRotation();
+            PlayerController.Instance.boardController.UpdateBoardPosition();
+            PlayerController.Instance.AnimOllieTransition(false);
+            PlayerController.Instance.AnimSetupTransition(false);
+            PlayerController.Instance.boardController.ReduceImpactBounce();
+            PlayerController.Instance.skaterController.AddCollisionOffset();
+            PlayerController.Instance.boardController.ForceBoardPosition();
+            EventManager.Instance.OnCatched(true, true);
+            PlayerController.Instance.AnimCaught(true);
+            PlayerController.Instance.cameraController.NeedToSlowLerpCamera = false;
+            PlayerController.Instance.ToggleFlipTrigger(false);
+            PlayerController.Instance.animationController.ScaleAnimSpeed(0.05f);
+            PlayerController.Instance.SetLeftKneeBendWeightManually(1f);
+            PlayerController.Instance.SetRightKneeBendWeightManually(1f);
+            PlayerController.Instance.boardController.LeaveFlipMode();
+            PlayerController.Instance.boardController.SetCatchForwardRotation();
+            SoundManager.Instance.PlayCatchSound();
+            MonoBehaviourSingleton<PlayerController>.Instance.SetBoardBackwards();
+            MonoBehaviourSingleton<PlayerController>.Instance.CorrectHandIKRotation(MonoBehaviourSingleton<PlayerController>.Instance.GetBoardBackwards());
+            MonoBehaviourSingleton<PlayerController>.Instance.boardController.ResetAll();
+            PlayerController.Instance.boardController.ResetAll();
+            PlayerController.Instance.SetMaxSteeze(0f);
+            PlayerController.Instance.AnimCaught(true);
+            PlayerController.Instance.CrossFadeAnimation("Extend", 0.15f);
+            PlayerController.Instance.OnExtendAnimEnter();
+            PlayerController.Instance.AnimRelease(false);
+            PlayerController.Instance.OnExtendAnimEnter();
+            PlayerController.Instance.SetCatchForwardRotation();
+
+            MonoBehaviourSingleton<PlayerController>.Instance.currentStateEnum = PlayerController.CurrentState.Riding;
+            MonoBehaviourSingleton<PlayerController>.Instance.cameraController.NeedToSlowLerpCamera = false;
+            MonoBehaviourSingleton<PlayerController>.Instance.AnimSetRollOff(false);
+            MonoBehaviourSingleton<EventManager>.Instance.EndTrickCombo(false, false);
+            MonoBehaviourSingleton<PlayerController>.Instance.ToggleFlipColliders(false);
+            MonoBehaviourSingleton<SoundManager>.Instance.PlayShoeMovementSound();
+            MonoBehaviourSingleton<PlayerController>.Instance.ResetBoardCenterOfMass();
+            MonoBehaviourSingleton<PlayerController>.Instance.ResetBackTruckCenterOfMass();
+            MonoBehaviourSingleton<PlayerController>.Instance.ResetFrontTruckCenterOfMass();
+            MonoBehaviourSingleton<PlayerController>.Instance.skaterController.InitializeSkateRotation();
+
+            MonoBehaviourSingleton<PlayerController>.Instance.AnimSetRollOff(false);
+            MonoBehaviourSingleton<PlayerController>.Instance.AnimSetNoComply(false);
+            MonoBehaviourSingleton<PlayerController>.Instance.skaterController.InitializeSkateRotation();
+            MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterRigidbody.angularVelocity = Vector3.zero;
+        }
+
         void PreventBail()
         {
             PlayerController.Instance.playerSM.IsInAirStateSM();
             base.StopCoroutine("RespawnRoutine");
-            UnityModManager.Logger.Log("Prevent Bail");
+            Log("Prevent Bail");
             fake_bail = true;
             PlayerController.Instance.respawn.behaviourPuppet.StopAllCoroutines();
             PlayerController.Instance.respawn.behaviourPuppet.unpinnedMuscleKnockout = false;
@@ -205,11 +207,7 @@ namespace boned_grabs
             PlayerController.Instance.SetBoardPhysicsMaterial(PlayerController.FrictionType.Default);
             PlayerController.Instance.respawn.bail.bailed = false;
             MonoBehaviourSingleton<PlayerController>.Instance.EnablePuppetMaster(false, true);
-            ResetMuscleWeight();
-            PlayerController.Instance.animationController.ForceAnimation("Pop");
             MonoBehaviourSingleton<PlayerController>.Instance.boardController.ResetBoardTargetPosition();
-
-            PlayerController.Instance.ResetAllAnimations();
             PlayerController.Instance.AnimGrindTransition(false);
             PlayerController.Instance.AnimOllieTransition(false);
             PlayerController.Instance.AnimSetupTransition(false);
@@ -220,7 +218,7 @@ namespace boned_grabs
         {
             if (PlayerController.Instance.currentStateEnum.ToString() != last_state)
             {
-                UnityModManager.Logger.Log(PlayerController.Instance.currentStateEnum.ToString());
+                Log(PlayerController.Instance.currentStateEnum.ToString());
                 last_state = PlayerController.Instance.currentStateEnum.ToString();
             }
         }
@@ -261,7 +259,7 @@ namespace boned_grabs
             {
                 if(run == limit / anim_ratio)
                 {
-                    UnityModManager.Logger.Log("Board to Master");
+                    Log("Board to Master");
                     ExitGrab();
                     PlayerController.Instance.boardController.ResetAll();
                     PlayerController.Instance.boardController.AutoCatchRotation();
@@ -278,7 +276,7 @@ namespace boned_grabs
             }
             if (run < limit / anim_ratio)
             {
-                UnityModManager.Logger.Log("Catch Animation");
+                Log("Catch Animation");
                 PlayerController.Instance.ikController.LeftIKWeight(1f);
                 PlayerController.Instance.ikController.RightIKWeight(1f);
                 PlayerController.Instance.boardController.boardControlTransform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.localPosition, PlayerController.Instance.boardController.boardControlTransform.localPosition + last_pos, Time.deltaTime * Main.settings.GrabBoardBoned_speed);
@@ -291,7 +289,7 @@ namespace boned_grabs
 
         void ExitGrab()
         {
-            UnityModManager.Logger.Log("Exit Grab");
+            Log("Exit Grab");
             PlayerController.Instance.SetHandIKWeight(0f, 0f);
             PlayerController.Instance.AnimSetGrabToeside(false);
             PlayerController.Instance.AnimSetGrabHeelside(false);
@@ -307,8 +305,8 @@ namespace boned_grabs
         void DoImpact()
         {
             if (impact) return;
-            UnityModManager.Logger.Log("DoImpact");
-            UnityModManager.Logger.Log("Is bail? " + fake_bail);
+            Log("DoImpact");
+            Log("Is bail? " + fake_bail);
 
             //PlayerController.Instance.playerSM.OnStickPressedSM(true);
             PlayerController.Instance.playerSM.OnStickPressedSM(false);
@@ -358,8 +356,12 @@ namespace boned_grabs
 
         void FinishGrab()
         {
-            UnityModManager.Logger.Log("Finish Grab");
+            Log("Finish Grab");
             PlayerController.Instance.boardController.ReduceImpactBounce();
+        }
+
+        void Log(String text) {
+            if (debug == true) UnityModManager.Logger.Log(text);
         }
     }
 }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityModManagerNet;
 
-namespace boned_grabs
+namespace grabs_customizer
 {
     [EnableReloading]
     static class Main
