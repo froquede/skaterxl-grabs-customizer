@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -31,7 +32,8 @@ namespace grabs_customizer
         {
             harmonyInstance = new Harmony(modEntry.Info.Id);
             settings = UnityModManager.ModSettings.Load<Settings>(modEntry);
-            settings.Save(modEntry);
+
+            checkLists(modEntry);
 
             BG = new GameObject().AddComponent<BonedGrabs>();
             UI = new GameObject().AddComponent<UIController>();
@@ -47,9 +49,36 @@ namespace grabs_customizer
             return true;
         }
 
+        private static void checkLists(UnityModManager.ModEntry modEntry)
+        {
+            if (settings.position_offset.Count == 0)
+            {
+                settings.position_offset = new List<Vector3>(new Vector3[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.rotation_offset.Count == 0)
+            {
+                settings.rotation_offset = new List<Vector3>(new Vector3[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.left_foot_speed.Count == 0)
+            {
+                settings.left_foot_speed = new List<Boolean>(new Boolean[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.right_foot_speed.Count == 0)
+            {
+                settings.right_foot_speed = new List<Boolean>(new Boolean[6]);
+                settings.Save(modEntry);
+            }
+        }
+
         private static void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            
+
         }
 
         private static void OnSaveGUI(UnityModManager.ModEntry modEntry)
@@ -57,7 +86,8 @@ namespace grabs_customizer
             settings.Save(modEntry);
         }
 
-        private static bool OnToggle(UnityModManager.ModEntry modEntry, bool value) {
+        private static bool OnToggle(UnityModManager.ModEntry modEntry, bool value)
+        {
             UnityModManager.Logger.Log("Toggled " + modEntry.Info.Id);
             return true;
         }

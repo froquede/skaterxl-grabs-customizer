@@ -13,18 +13,21 @@ namespace grabs_customizer
     {
         private bool showMainMenu;
         private Rect MainMenuRect;
+        string selected_grab = "";
+        int selected_grab_index = 0;
+        string[] grabNames = new string[] { "Indy", "Melon", "NoseGrab", "TailGrab", "WeddleGrab", "Stalefish" };
 
         private void Start()
         {
+            selected_grab = grabNames[0];
             showMainMenu = false;
             MainMenuRect = new Rect(24f, 24f, 100f, 200f);
         }
 
         private void Update()
         {
-            if (Input.GetKeyDown(Main.settings.Hotkey.keyCode) && (!Input.GetKeyDown(Main.settings.RightCtrlkey.keyCode) && !Input.GetKeyDown(Main.settings.LeftCtrlkey.keyCode)))
+            if (Input.GetKeyDown(Main.settings.Hotkey.keyCode))
             {
-                UnityModManager.Logger.Log("Pressed: " + showMainMenu.ToString());
                 if (showMainMenu)
                 {
                     Close();
@@ -54,8 +57,7 @@ namespace grabs_customizer
         {
             if (showMainMenu)
             {
-                GUI.backgroundColor = Main.settings.BGColor;
-                MainMenuRect = GUILayout.Window(420, MainMenuRect, MainMenu, "<b>Grabs Customizer v1.2.0</b>");
+                MainMenuRect = GUILayout.Window(420, MainMenuRect, MainMenu, "<b>Grabs Customizer v1.3.0 - discord</b>");
             }
         }
 
@@ -64,45 +66,75 @@ namespace grabs_customizer
             GUI.backgroundColor = Color.black;
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
 
-            Title();
-
             GUILayout.BeginVertical("Box");
 
-            if (RGUI.Button(Main.settings.BonedGrab, "Boned Grab"))
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("<b>Selected grab:</b>");
+            selected_grab_index = RGUI.SelectionPopup(selected_grab_index, grabNames);
+            GUILayout.EndHorizontal();
+            GUILayout.Label("<b></b>", GUILayout.Height(16f));
+
+            GUILayout.Label("<b>Position offset in world units</b>", GUILayout.Height(32f));
+            Vector3 temp_vector_pos = Main.settings.position_offset[selected_grab_index];
+            temp_vector_pos.x = RGUI.SliderFloat(temp_vector_pos.x, -20f, 20f, 0f, "Left | Right");
+            temp_vector_pos.y = RGUI.SliderFloat(temp_vector_pos.y, -20f, 20f, 0f, "Down | Up");
+            temp_vector_pos.z = RGUI.SliderFloat(temp_vector_pos.z, -20f, 20f, 0f, "Backward | Forward");
+            Main.settings.position_offset[selected_grab_index] = temp_vector_pos;
+            GUILayout.Label("<b></b>", GUILayout.Height(16f));
+
+            GUILayout.Label("<b>Rotation offset in degrees</b>", GUILayout.Height(32f));
+            Vector3 temp_vector_rot = Main.settings.rotation_offset[selected_grab_index];
+            temp_vector_rot.x = RGUI.SliderFloat(temp_vector_rot.x, -359f, 359f, 0f, "Pitch");
+            temp_vector_rot.y = RGUI.SliderFloat(temp_vector_rot.y, -359f, 359f, 0f, "Yaw");
+            temp_vector_rot.z = RGUI.SliderFloat(temp_vector_rot.z, -359f, 359f, 0f, "Roll");
+            Main.settings.rotation_offset[selected_grab_index] = temp_vector_rot;
+            GUILayout.Label("<b></b>", GUILayout.Height(16f));
+
+            if (RGUI.Button(Main.settings.left_foot_speed[selected_grab_index], "Detach <b>Left</b> foot"))
             {
-                Main.settings.BonedGrab = !Main.settings.BonedGrab;
+                Main.settings.left_foot_speed[selected_grab_index] = !Main.settings.left_foot_speed[selected_grab_index];
+            }
+            if (RGUI.Button(Main.settings.right_foot_speed[selected_grab_index], "Detach <b>Right</b> foot"))
+            {
+                Main.settings.right_foot_speed[selected_grab_index] = !Main.settings.right_foot_speed[selected_grab_index];
             }
 
             GUILayout.EndVertical();
 
             GUILayout.BeginVertical("Box");
-            GUILayout.Label("<b>Board offset in world units</b>", GUILayout.Height(32f));
-            Main.settings.GrabBoardBoned_x = RGUI.SliderFloat(Main.settings.GrabBoardBoned_x, -20f, 20f, 0f, "Board Offset X");
-            Main.settings.GrabBoardBoned_y = RGUI.SliderFloat(Main.settings.GrabBoardBoned_y, -20f, 20f, 0f, "Board Offset Y");
-            Main.settings.GrabBoardBoned_z = RGUI.SliderFloat(Main.settings.GrabBoardBoned_z, -20f, 20f, 0f, "Board Offset Z");
-            
-            GUILayout.Label("<b></b>", GUILayout.Height(16f));
-            GUILayout.Label("<b>Rotation offset in degrees (-360 to 360)</b>", GUILayout.Height(32f));
-            Main.settings.GrabBoardBoned_rotation_x = RGUI.SliderFloat(Main.settings.GrabBoardBoned_rotation_x, -360f, 360f, 0f, "Board Rotation X");
-            Main.settings.GrabBoardBoned_rotation_y = RGUI.SliderFloat(Main.settings.GrabBoardBoned_rotation_y, -360f, 360f, 0f, "Board Rotation Y");
-            Main.settings.GrabBoardBoned_rotation_z = RGUI.SliderFloat(Main.settings.GrabBoardBoned_rotation_z, -360f, 360f, 0f, "Board Rotation Z");
-
-            GUILayout.Label("<b></b>", GUILayout.Height(16f));
-            Main.settings.GrabBoardBoned_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_speed, 0.1f, 8f, 3f, "Offset animation multiplier");
+            if (RGUI.Button(Main.settings.BonedGrab, "Customized Grab"))
+            {
+                Main.settings.BonedGrab = !Main.settings.BonedGrab;
+            }
             GUILayout.EndVertical();
 
-            GUILayout.Label("<b></b>", GUILayout.Height(16f));
             GUILayout.BeginVertical("Box");
-            GUILayout.Label("<b>Weight of the IK feet for following the skate (0 will detach board)</b>", GUILayout.Height(32f));
-            Main.settings.GrabBoardBoned_left_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_left_speed, 0f, 2f, 1f, "Left foot IK weight");
-            Main.settings.GrabBoardBoned_right_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_right_speed, 0f, 2f, 1f, "Right foot IK weight");
+            if (RGUI.Button(Main.settings.continuously_detect, "Continuously detect type of grab"))
+            {
+                Main.settings.continuously_detect = !Main.settings.continuously_detect;
+            }
             GUILayout.EndVertical();
+        }
 
-            /*GUILayout.Label("<b>Weight of the IK hands for following the skate (0 will detach hands)</b>", GUILayout.Height(24f));
-            GUILayout.BeginVertical("Box");
-            Main.settings.GrabBoardBoned_left_hand_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_left_hand_speed, 0f, 2f, 1f, "Left hand IK weight");
-            Main.settings.GrabBoardBoned_right_hand_speed = RGUI.SliderFloat(Main.settings.GrabBoardBoned_right_hand_speed, 0f, 2f, 1f, "Right hand IK weight");
-            GUILayout.EndVertical();*/
+        public Vector3 getCustomRotation(int grab)
+        {
+            return Main.settings.rotation_offset[grab];
+        }
+
+        public Vector3 getCustomPosition(int grab)
+        {
+            return Main.settings.position_offset[grab];
+        }
+
+        string getNextGrab()
+        {
+            selected_grab_index++;
+            if(grabNames.ElementAtOrDefault(selected_grab_index) != null) { return grabNames[selected_grab_index]; }
+            else
+            {
+                selected_grab_index = 0;
+                return grabNames[selected_grab_index];
+            }
         }
 
         private void Title()

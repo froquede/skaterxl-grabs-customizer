@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -7,34 +8,24 @@ namespace grabs_customizer
     [Serializable]
     public class Settings : UnityModManager.ModSettings, IDrawable
     {
-        [Draw(DrawType.KeyBinding)] public KeyBinding Hotkey = new KeyBinding { keyCode = KeyCode.F6 };
-        [Draw(DrawType.KeyBinding)] public KeyBinding RightCtrlkey = new KeyBinding { keyCode = KeyCode.RightControl };
-        [Draw(DrawType.KeyBinding)] public KeyBinding LeftCtrlkey = new KeyBinding { keyCode = KeyCode.LeftControl };
-
-        public Color BGColor = new Color(0f,0f,0f);
+        [Draw(DrawType.KeyBinding)] public KeyBinding Hotkey = new KeyBinding { keyCode = KeyCode.F4 };
 
         public bool BonedGrab = true;
 
-        public float GrabBoardBoned_x = 0f;
-        public float GrabBoardBoned_y = 0f;
-        public float GrabBoardBoned_z = 0f;
+        public bool continuously_detect = false;
 
-        public float GrabBoardBoned_rotation_x = 0f;
-        public float GrabBoardBoned_rotation_y = 0f;
-        public float GrabBoardBoned_rotation_z = 0f;
+
+        public List<Vector3> position_offset = new List<Vector3>();
+        public List<Vector3> position_offset_onbutton = new List<Vector3>();
+        public List<Vector3> rotation_offset = new List<Vector3>();
+        public List<Vector3> rotation_offset_onbutton = new List<Vector3>();
 
         public float GrabBoardBoned_speed = 3f;
-
         public float GrabBoardBoned_left_speed = 1f;
         public float GrabBoardBoned_right_speed = 1f;
 
-        public float GrabBoardBoned_left_knee = 1f;
-        public float GrabBoardBoned_right_knee = 1f;
-
-        public float GrabBoardBoned_left_hand_speed = 1f;
-        public float GrabBoardBoned_right_hand_speed = 1f;
-
-        public int GrabBoardBoned_animation_frames = 36;
+        public List<bool> left_foot_speed = new List<Boolean>();
+        public List<bool> right_foot_speed = new List<Boolean>();
 
         public void OnChange()
         {

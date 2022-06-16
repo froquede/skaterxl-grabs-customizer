@@ -63,6 +63,10 @@
       <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\SkaterXL.Data.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="SkaterXL.TrickDetection">
+      <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\SkaterXL.TrickDetection.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
