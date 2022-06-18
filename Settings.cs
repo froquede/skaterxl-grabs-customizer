@@ -14,6 +14,7 @@ namespace grabs_customizer
 
         public bool continuously_detect = false;
 
+        public bool remove_delay = false;
 
         public List<Vector3> position_offset = new List<Vector3>();
         public List<Vector3> position_offset_onbutton = new List<Vector3>();
@@ -26,6 +27,13 @@ namespace grabs_customizer
 
         public List<bool> left_foot_speed = new List<Boolean>();
         public List<bool> right_foot_speed = new List<Boolean>();
+        public List<bool> left_foot_speed_onbutton = new List<Boolean>();
+        public List<bool> right_foot_speed_onbutton = new List<Boolean>();
+        
+        public List<bool> hands = new List<Boolean>();
+
+        public List<int> selected_anim_index = new List<int>();
+        public List<int> selected_anim_index_onbutton = new List<int>();
 
         public void OnChange()
         {

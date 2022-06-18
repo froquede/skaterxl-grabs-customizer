@@ -57,9 +57,21 @@ namespace grabs_customizer
                 settings.Save(modEntry);
             }
 
+            if (settings.position_offset_onbutton.Count == 0)
+            {
+                settings.position_offset_onbutton = new List<Vector3>(new Vector3[6]);
+                settings.Save(modEntry);
+            }
+
             if (settings.rotation_offset.Count == 0)
             {
                 settings.rotation_offset = new List<Vector3>(new Vector3[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.rotation_offset_onbutton.Count == 0)
+            {
+                settings.rotation_offset_onbutton = new List<Vector3>(new Vector3[6]);
                 settings.Save(modEntry);
             }
 
@@ -69,9 +81,39 @@ namespace grabs_customizer
                 settings.Save(modEntry);
             }
 
+            if (settings.left_foot_speed_onbutton.Count == 0)
+            {
+                settings.left_foot_speed_onbutton = new List<Boolean>(new Boolean[6]);
+                settings.Save(modEntry);
+            }
+
             if (settings.right_foot_speed.Count == 0)
             {
                 settings.right_foot_speed = new List<Boolean>(new Boolean[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.right_foot_speed_onbutton.Count == 0)
+            {
+                settings.right_foot_speed_onbutton = new List<Boolean>(new Boolean[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.hands.Count == 0)
+            {
+                settings.hands = new List<Boolean>(new Boolean[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.selected_anim_index.Count == 0)
+            {
+                settings.selected_anim_index = new List<int>(new int[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.selected_anim_index_onbutton.Count == 0)
+            {
+                settings.selected_anim_index_onbutton = new List<int>(new int[6]);
                 settings.Save(modEntry);
             }
         }

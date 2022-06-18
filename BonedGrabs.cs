@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityModManagerNet;
 using SkaterXL.Core;
 using RootMotion.Dynamics;
+using RootMotion.FinalIK;
 
 namespace grabs_customizer
 {
@@ -14,15 +15,31 @@ namespace grabs_customizer
         int limit = 36;
         string last_state;
         bool save_last_pos = true;
-        bool debug = false;
+        bool debug = true;
         bool determine_grab = true;
+        bool on_button = false;
+
         GrabType actual_grab;
         Vector3 last_pos;
+
+        GameObject left_leg;
+        GameObject right_leg;
+        GameObject left_foot;
+        GameObject right_foot;
+
+        float last_left_leg;
+        float last_right_leg;
+        bool anim_forced = false;
 
         private void Start()
         {
             reset();
             Log("Controller started");
+
+            left_leg = GameObject.Find("Skater_UpLeg_l");
+            right_leg = GameObject.Find("Skater_UpLeg_r");
+            left_foot = GameObject.Find("Skater_foot_l");
+            right_foot = GameObject.Find("Skater_foot_r");
         }
 
         void reset()
@@ -32,16 +49,35 @@ namespace grabs_customizer
             PlayerController.Instance.respawn.DoRespawn();
         }
 
+        void reset_values()
+        {
+            determine_grab = true;
+            save_last_pos = true;
+            anim_forced = false;
+            PlayerController.Instance.ikController.LeftIKWeight(1f);
+            PlayerController.Instance.ikController.RightIKWeight(1f);
+        }
+
+        string[] animNames = new string[] { "Disabled", "Falling", "InAir", "Riding" };
+
         private void Update()
         {
             if (!Main.settings.BonedGrab) return;
+
+            if (PlayerController.Instance.inputController.player.GetButton("Right Stick Button")) on_button = true;
+            else on_button = false;
+
+            if (Main.settings.remove_delay && (PlayerController.Instance.inputController.player.GetButton("RB") || PlayerController.Instance.inputController.player.GetButton("LB")) && !IsGrabbing() && !IsGrounded())
+            {
+                ForceAir();
+            }
+
             if (!IsGrabbing() && run <= limit)
             {
                 if (run == 0)
                 {
-                    PlayerController.Instance.animationController.ForceAnimation("Catch");
-                    PlayerController.Instance.ikController.LeftIKWeight(1f);
-                    PlayerController.Instance.ikController.RightIKWeight(1f);
+                    reset_values();
+                    last_left_leg = left_leg.transform.rotation.eulerAngles.y;
                 }
                 else
                 {
@@ -71,6 +107,11 @@ namespace grabs_customizer
 
             LogState();
 
+            if (Main.settings.remove_delay && (PlayerController.Instance.inputController.player.GetButton("RB") || PlayerController.Instance.inputController.player.GetButton("LB")) && !IsGrabbing() && !IsGrounded())
+            {
+                ForceAir();
+            }
+
             if (save_last_pos)
             {
                 last_pos = PlayerController.Instance.boardController.boardControlTransform.localPosition;
@@ -82,6 +123,35 @@ namespace grabs_customizer
                 save_last_pos = false;
 
                 DoGrabOffsetRotation();
+
+                if (!anim_forced)
+                {
+                    if (!on_button && Main.settings.selected_anim_index[(int)actual_grab] > 0)
+                    {
+                        string animation = animNames[Main.settings.selected_anim_index[(int)actual_grab]];
+                        PlayerController.Instance.animationController.CrossFadeAnimation(animation, .166f);
+                        PlayerController.Instance.animationController.skaterAnim.enabled = true;
+                        PlayerController.Instance.animationController.ikAnim.enabled = true;
+                        PlayerController.Instance.animationController.ScaleAnimSpeed(1.25f);
+                    }
+                    else
+                    {
+                        if (on_button && Main.settings.selected_anim_index_onbutton[(int)actual_grab] > 0)
+                        {
+                            string animation = animNames[Main.settings.selected_anim_index_onbutton[(int)actual_grab]];
+                            PlayerController.Instance.animationController.CrossFadeAnimation(animation, .166f);
+                            PlayerController.Instance.animationController.skaterAnim.enabled = true;
+                            PlayerController.Instance.animationController.ikAnim.enabled = true;
+                            PlayerController.Instance.animationController.ScaleAnimSpeed(1.25f);
+                        }
+                        else
+                        {
+                            PlayerController.Instance.animationController.ForceAnimation("Grabs");
+                            PlayerController.Instance.animationController.ScaleAnimSpeed(1f);
+                        }
+                    }
+                    anim_forced = true;
+                }
             }
             else
             {
@@ -93,12 +163,23 @@ namespace grabs_customizer
             }
         }
 
+        void ForceAir()
+        {
+            DoGrabOffsetRotation();
+            DoGrabOffsetPosition();
+            actual_grab = DetermineGrab();
+
+            PlayerController.Instance.currentStateEnum = PlayerController.CurrentState.Grabs;
+            EventManager.Instance.StartGrab(actual_grab);
+        }
+
         private void LateUpdate()
         {
             if (!Main.settings.BonedGrab) return;
 
             if (!IsGrabbing() && IsInAir() && run == 0)
             {
+                EventManager.Instance.ExitGrab();
                 PlayerController.Instance.ToggleFlipTrigger(false);
                 PlayerController.Instance.BoardFreezedAfterRespawn = false;
                 PlayerController.Instance.boardController.ResetAll();
@@ -107,8 +188,6 @@ namespace grabs_customizer
                 PlayerController.Instance.playerSM.OnRespawnSM();
                 PlayerController.Instance.DisableArmPhysics();
                 PlayerController.Instance.ResetIKOffsets();
-                determine_grab = true;
-                save_last_pos = true;
             }
         }
 
@@ -160,8 +239,6 @@ namespace grabs_customizer
             PlayerController.Instance.respawn.bail.StopAllCoroutines();
             PlayerController.Instance.CancelRespawnInvoke();
             PlayerController.Instance.CancelInvoke("DoBail");
-            PlayerController.Instance.currentStateEnum = PlayerController.CurrentState.InAir;
-            EventManager.Instance.EnterAir();
 
             base.CancelInvoke("DoBail");
             MonoBehaviourSingleton<PlayerController>.Instance.CancelInvoke("DoBail");
@@ -190,6 +267,10 @@ namespace grabs_customizer
             PlayerController.Instance.AnimSetupTransition(false);
             PlayerController.Instance.respawn.behaviourPuppet.masterProps.normalMode = BehaviourPuppet.NormalMode.Unmapped;
             PlayerController.Instance.respawn.bail.bailed = false;
+
+            PlayerController.Instance.animationController.CrossFadeAnimation("InAir", .5f);
+
+            reset_values();
         }
 
 
@@ -205,6 +286,7 @@ namespace grabs_customizer
         public void DoGrabOffsetRotation()
         {
             if (Main.settings.continuously_detect) actual_grab = DetermineGrab();
+            IK();
 
             Vector3 offset = getCustomRotation(actual_grab);
 
@@ -215,8 +297,8 @@ namespace grabs_customizer
 
             PlayerController.Instance.boardController.UpdateBoardPosition();
             // PlayerController.Instance.ikController.ForceUpdateIK();
-            PlayerController.Instance.ikController.LeftIKWeight(Main.settings.left_foot_speed[(int)actual_grab] ? 0f : 1f);
-            PlayerController.Instance.ikController.RightIKWeight(Main.settings.right_foot_speed[(int)actual_grab] ? 0f : 1f);
+            PlayerController.Instance.ikController.LeftIKWeight(getLeftWeight());
+            PlayerController.Instance.ikController.RightIKWeight(getRightWeight());
 
             PlayerController.Instance.LerpKneeIkWeight();
 
@@ -227,16 +309,53 @@ namespace grabs_customizer
 
             Vector3 offset_pos = getCustomPosition(actual_grab);
             PlayerController.Instance.boardController.boardControlTransform.transform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.transform.localPosition, PlayerController.Instance.boardController.boardControlTransform.transform.localPosition + new Vector3(offset_pos.x, offset_pos.y, offset_pos.z), Time.deltaTime * Main.settings.GrabBoardBoned_speed);
+            PlayerController.Instance.comController.UpdateCOM();
+        }
+
+        int getLeftWeight()
+        {
+            if (!on_button) return Main.settings.left_foot_speed[(int)actual_grab] ? 0 : 1;
+            else return Main.settings.left_foot_speed_onbutton[(int)actual_grab] ? 0 : 1;
+        }
+
+        int getRightWeight()
+        {
+            if (!on_button) return Main.settings.right_foot_speed[(int)actual_grab] ? 0 : 1;
+            else return Main.settings.right_foot_speed_onbutton[(int)actual_grab] ? 0 : 1;
+        }
+
+        void IK()
+        {
+            GrabSide side = DetermineSide();
+            PlayerController.Instance.ikController._finalIk.solver.iterations = 4;
+            PlayerController.Instance.ikController._finalIk.solver.spineMapping.iterations = 4;
+            PlayerController.Instance.ikController.SetHandIKWeight(side == GrabSide.Left ? 1 : 0, side == GrabSide.Right ? 1 : 0);
+        }
+
+        void UpdateKneeTargets()
+        {
+            float kneeIkLerp = .5f;
+            Vector3 vector = (!MonoBehaviourSingleton<PlayerController>.Instance.GetBoardBackwards()) ? MonoBehaviourSingleton<PlayerController>.Instance.boardController.boardTransform.forward : (-MonoBehaviourSingleton<PlayerController>.Instance.boardController.boardTransform.forward);
+            vector = Vector3.ProjectOnPlane(vector, MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterTransform.up);
+            float kneeIkRotationOffset = Vector3.SignedAngle(MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterTransform.forward, vector, MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterTransform.up);
+            Vector3 vector2 = Vector3.Lerp(MonoBehaviourSingleton<PlayerController>.Instance.skaterController.leftKneeGuide.up, Quaternion.AngleAxis(kneeIkRotationOffset, MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterTransform.up) * MonoBehaviourSingleton<PlayerController>.Instance.skaterController.leftKneeGuide.up, kneeIkLerp);
+            Vector3 vector3 = Vector3.Lerp(MonoBehaviourSingleton<PlayerController>.Instance.skaterController.rightKneeGuide.up, Quaternion.AngleAxis(kneeIkRotationOffset, MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterTransform.up) * MonoBehaviourSingleton<PlayerController>.Instance.skaterController.rightKneeGuide.up, kneeIkLerp);
+            vector2 = Vector3.ProjectOnPlane(vector2, MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterTransform.up);
+            vector3 = Vector3.ProjectOnPlane(vector3, MonoBehaviourSingleton<PlayerController>.Instance.skaterController.skaterTransform.up);
+            Vector3 position = MonoBehaviourSingleton<PlayerController>.Instance.skaterController.leftKneeGuide.position + vector2 * 0.5f;
+            Vector3 position2 = MonoBehaviourSingleton<PlayerController>.Instance.skaterController.rightKneeGuide.position + vector3 * 0.5f;
+            MonoBehaviourSingleton<PlayerController>.Instance.skaterController.leftKneeTarget.position = position;
+            MonoBehaviourSingleton<PlayerController>.Instance.skaterController.rightKneeTarget.position = position2;
         }
 
         public Vector3 getCustomRotation(GrabType grab)
         {
-            return Main.settings.rotation_offset[(int)grab];
+            return !on_button ? Main.settings.rotation_offset[(int)grab] : Main.settings.rotation_offset_onbutton[(int)grab];
         }
 
         public Vector3 getCustomPosition(GrabType grab)
         {
-            return Main.settings.position_offset[(int)grab];
+            return !on_button ? Main.settings.position_offset[(int)grab] : Main.settings.position_offset_onbutton[(int)grab];
         }
 
         public void DoGrabOffsetPosition()
@@ -251,6 +370,11 @@ namespace grabs_customizer
 
         public bool IsInAir() { return PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.InAir; }
         public bool IsGrabbing() { return (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Grabs) || EventManager.Instance.IsGrabbing; }
+
+        public bool IsGrounded()
+        {
+            return PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Riding || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Setup || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Manual || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Powerslide || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Pushing || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Braking || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Impact || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Grinding || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.EnterCoping || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.ExitCoping;
+        }
 
         void Log(String text)
         {
