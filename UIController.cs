@@ -16,7 +16,6 @@ namespace grabs_customizer
         string selected_grab = "";
         int selected_grab_index = 0;
         string[] grabNames = new string[] { "Indy", "Melon", "NoseGrab", "TailGrab", "WeddleGrab", "Stalefish" };
-        int selected_anim_index = 0;
         string[] animNames = new string[] { "Disabled", "Falling" };
         bool on_pressed = false;
 
@@ -60,7 +59,7 @@ namespace grabs_customizer
         {
             if (showMainMenu)
             {
-                MainMenuRect = GUILayout.Window(420, MainMenuRect, MainMenu, "<b>Grabs Customizer v1.4.0 - discord</b>");
+                MainMenuRect = GUILayout.Window(420, MainMenuRect, MainMenu, "<b>Grabs Customizer v1.5.0 - discord early</b>");
             }
         }
 
@@ -99,9 +98,9 @@ namespace grabs_customizer
 
             GUILayout.Label("Rotation offset", GUILayout.Height(26f));
             Vector3 temp_vector_rot = !on_pressed ? Main.settings.rotation_offset[selected_grab_index] : Main.settings.rotation_offset_onbutton[selected_grab_index];
-            temp_vector_rot.x = RGUI.SliderFloat(temp_vector_rot.x, -359f, 359f, 0f, "Pitch");
-            temp_vector_rot.y = RGUI.SliderFloat(temp_vector_rot.y, -359f, 359f, 0f, "Yaw");
-            temp_vector_rot.z = RGUI.SliderFloat(temp_vector_rot.z, -359f, 359f, 0f, "Roll");
+            temp_vector_rot.x = RGUI.SliderFloat(temp_vector_rot.x, -180f, 180f, 0f, "Pitch");
+            temp_vector_rot.y = RGUI.SliderFloat(temp_vector_rot.y, -180f, 180f, 0f, "Yaw");
+            temp_vector_rot.z = RGUI.SliderFloat(temp_vector_rot.z, -180f, 180f, 0f, "Roll");
             if (!on_pressed)
             {
                 Main.settings.rotation_offset[selected_grab_index] = temp_vector_rot;
@@ -110,6 +109,17 @@ namespace grabs_customizer
             {
                 Main.settings.rotation_offset_onbutton[selected_grab_index] = temp_vector_rot;
             }
+            GUILayout.Label("<b></b>", GUILayout.Height(16f));
+
+            if(!on_pressed)
+            {
+                Main.settings.animation_length[selected_grab_index] = (int)RGUI.SliderFloat(Main.settings.animation_length[selected_grab_index], 1, 60f, 36f, "Animation length (frames)");
+            }
+            else
+            {
+                Main.settings.animation_length_onbutton[selected_grab_index] = (int)RGUI.SliderFloat(Main.settings.animation_length_onbutton[selected_grab_index], 1, 60f, 36f, "Animation length (frames)");
+            }
+
             GUILayout.Label("<b></b>", GUILayout.Height(16f));
 
             if (RGUI.Button(!on_pressed ? Main.settings.left_foot_speed[selected_grab_index] : Main.settings.left_foot_speed_onbutton[selected_grab_index], "Detach <b>Left</b> foot"))
@@ -123,11 +133,11 @@ namespace grabs_customizer
                 else Main.settings.right_foot_speed_onbutton[selected_grab_index] = !Main.settings.right_foot_speed_onbutton[selected_grab_index];
             }
 
-            GUILayout.BeginHorizontal();
+            /*GUILayout.BeginHorizontal();
             GUILayout.Label("<b>Play animation: (experimental)</b>");
             if(!on_pressed) Main.settings.selected_anim_index[selected_grab_index] = RGUI.SelectionPopup(Main.settings.selected_anim_index[selected_grab_index], animNames);
             else Main.settings.selected_anim_index_onbutton[selected_grab_index] = RGUI.SelectionPopup(Main.settings.selected_anim_index_onbutton[selected_grab_index], animNames);
-            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();*/
 
             /*if (RGUI.Button(Main.settings.hands[selected_grab_index], "Detach Hands"))
             {
@@ -150,12 +160,12 @@ namespace grabs_customizer
             }
             GUILayout.EndVertical();
 
-            /*GUILayout.BeginVertical("Box");
-            if (RGUI.Button(Main.settings.remove_delay, "Remove grab delay (experimental)"))
+            GUILayout.BeginVertical("Box");
+            if (RGUI.Button(Main.settings.config_mode, "Config mode"))
             {
-                Main.settings.remove_delay = !Main.settings.remove_delay;
+                Main.settings.config_mode = !Main.settings.config_mode;
             }
-            GUILayout.EndVertical();*/
+            GUILayout.EndVertical();
         }
 
         public Vector3 getCustomRotation(int grab)

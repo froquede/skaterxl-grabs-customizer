@@ -2,7 +2,7 @@
   "Id": "grabs-customizer",
   "DisplayName": "Grabs Customizer",
   "Author": "froquede",
-  "Version": "1.4.0",
+  "Version": "1.5.0",
   "ManagerVersion": "0.22.5.0",
   "Requirements": [],
   "LoadAfter": [ "XXLMod3" ],

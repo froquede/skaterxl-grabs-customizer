@@ -4,12 +4,15 @@ using UnityModManagerNet;
 using SkaterXL.Core;
 using RootMotion.Dynamics;
 using RootMotion.FinalIK;
+using HarmonyLib;
 
 namespace grabs_customizer
 {
     class BonedGrabs : MonoBehaviour
     {
         public static BonedGrabs Instance { get; private set; }
+
+        LayerMask layerMask = ~(1 << LayerMask.NameToLayer("Skateboard"));
 
         int run;
         int limit = 36;
@@ -19,16 +22,18 @@ namespace grabs_customizer
         bool determine_grab = true;
         bool on_button = false;
 
+        int grab_frame = 0;
+        int grab_limit = 36;
+
         GrabType actual_grab;
         Vector3 last_pos;
+        Vector3 first_rotation;
 
         GameObject left_leg;
         GameObject right_leg;
         GameObject left_foot;
         GameObject right_foot;
 
-        float last_left_leg;
-        float last_right_leg;
         bool anim_forced = false;
 
         private void Start()
@@ -64,12 +69,15 @@ namespace grabs_customizer
         {
             if (!Main.settings.BonedGrab) return;
 
-            if (PlayerController.Instance.inputController.player.GetButton("Right Stick Button")) on_button = true;
-            else on_button = false;
-
-            if (Main.settings.remove_delay && (PlayerController.Instance.inputController.player.GetButton("RB") || PlayerController.Instance.inputController.player.GetButton("LB")) && !IsGrabbing() && !IsGrounded())
+            // if (PlayerController.Instance.inputController.player.GetButton("X"))
+            if (PlayerController.Instance.inputController.player.GetButton("Right Stick Button"))
             {
-                ForceAir();
+                if (!on_button) grab_frame = 0;
+                on_button = true;
+            }
+            else { 
+                if(on_button) grab_frame = 0;
+                on_button = false;
             }
 
             if (!IsGrabbing() && run <= limit)
@@ -77,12 +85,10 @@ namespace grabs_customizer
                 if (run == 0)
                 {
                     reset_values();
-                    last_left_leg = left_leg.transform.rotation.eulerAngles.y;
                 }
                 else
                 {
                     if (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
-
                     PlayerController.Instance.boardController.boardControlTransform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.localPosition, last_pos, map01(run, 1, limit));
                 }
             }
@@ -91,85 +97,81 @@ namespace grabs_customizer
             {
                 if (determine_grab)
                 {
-                    PlayerController.Instance.DisableArmPhysics();
                     PlayerController.Instance.CorrectHandIKRotation(PlayerController.Instance.boardController.IsBoardBackwards);
+                    PlayerController.Instance.DisableArmPhysics();
                     actual_grab = DetermineGrab();
                     determine_grab = false;
                 }
-
-                DoGrabOffsetPosition();
+            }
+            else
+            {
+                if (IsInAir() && run == 0)
+                {
+                    PreventInAirBail();
+                }
             }
         }
 
         public void FixedUpdate()
         {
+
             if (!Main.settings.BonedGrab) return;
 
-            LogState();
-
-            if (Main.settings.remove_delay && (PlayerController.Instance.inputController.player.GetButton("RB") || PlayerController.Instance.inputController.player.GetButton("LB")) && !IsGrabbing() && !IsGrounded())
+            if (Main.settings.config_mode)
             {
-                ForceAir();
+                PlayerController.Instance.boardController.boardRigidbody.AddForce(0, .4f * 1.075f, 0, ForceMode.Impulse);
+                PlayerController.Instance.skaterController.skaterRigidbody.AddForce(0, .1f * 1.075f, 0, ForceMode.Impulse);
             }
+            // LogState();
 
             if (save_last_pos)
             {
                 last_pos = PlayerController.Instance.boardController.boardControlTransform.localPosition;
+                first_rotation = PlayerController.Instance.boardController.gameObject.transform.localRotation.eulerAngles;
             }
 
             if (IsGrabbing())
             {
                 run = 0;
                 save_last_pos = false;
+                PlayerController.Instance.SetKneeBendWeightManually(1f);
 
+                DoGrabOffsetPosition();
                 DoGrabOffsetRotation();
 
-                if (!anim_forced)
-                {
-                    if (!on_button && Main.settings.selected_anim_index[(int)actual_grab] > 0)
-                    {
-                        string animation = animNames[Main.settings.selected_anim_index[(int)actual_grab]];
-                        PlayerController.Instance.animationController.CrossFadeAnimation(animation, .166f);
-                        PlayerController.Instance.animationController.skaterAnim.enabled = true;
-                        PlayerController.Instance.animationController.ikAnim.enabled = true;
-                        PlayerController.Instance.animationController.ScaleAnimSpeed(1.25f);
-                    }
-                    else
-                    {
-                        if (on_button && Main.settings.selected_anim_index_onbutton[(int)actual_grab] > 0)
-                        {
-                            string animation = animNames[Main.settings.selected_anim_index_onbutton[(int)actual_grab]];
-                            PlayerController.Instance.animationController.CrossFadeAnimation(animation, .166f);
-                            PlayerController.Instance.animationController.skaterAnim.enabled = true;
-                            PlayerController.Instance.animationController.ikAnim.enabled = true;
-                            PlayerController.Instance.animationController.ScaleAnimSpeed(1.25f);
-                        }
-                        else
-                        {
-                            PlayerController.Instance.animationController.ForceAnimation("Grabs");
-                            PlayerController.Instance.animationController.ScaleAnimSpeed(1f);
-                        }
-                    }
-                    anim_forced = true;
-                }
+                PlayerController.Instance.boardController.UpdateReferenceBoardTargetRotation();
+                UnityModManager.Logger.Log(grab_frame.ToString());
             }
             else
             {
+                grab_frame = 0;
+
+                if (run <= limit)
+                {
+                    if (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
+                }
+
                 if (run == limit + 1)
                 {
                     Catch();
                 }
+
                 run++;
+            }
+
+            if (IsGrounded() && run <= limit)
+            {
+                reset_values();
+                PreventBail();
+                Catch();
+                run = limit + 2;
             }
         }
 
         void ForceAir()
         {
-            DoGrabOffsetRotation();
-            DoGrabOffsetPosition();
-            actual_grab = DetermineGrab();
-
             PlayerController.Instance.currentStateEnum = PlayerController.CurrentState.Grabs;
+            actual_grab = DetermineGrab();
             EventManager.Instance.StartGrab(actual_grab);
         }
 
@@ -177,20 +179,48 @@ namespace grabs_customizer
         {
             if (!Main.settings.BonedGrab) return;
 
-            if (!IsGrabbing() && IsInAir() && run == 0)
+            if (!IsGrabbing() && run <= limit)
             {
-                EventManager.Instance.ExitGrab();
-                PlayerController.Instance.ToggleFlipTrigger(false);
-                PlayerController.Instance.BoardFreezedAfterRespawn = false;
-                PlayerController.Instance.boardController.ResetAll();
-                PlayerController.Instance.boardController.UpdateBoardPosition();
-                PlayerController.Instance.comController.UpdateCOM();
-                PlayerController.Instance.playerSM.OnRespawnSM();
-                PlayerController.Instance.DisableArmPhysics();
-                PlayerController.Instance.ResetIKOffsets();
+                if (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
             }
         }
 
+
+        void CheckAnimation()
+        {
+            if (!anim_forced)
+            {
+                if (!on_button && Main.settings.selected_anim_index[(int)actual_grab] > 0)
+                {
+                    string animation = animNames[Main.settings.selected_anim_index[(int)actual_grab]];
+                    PlayerController.Instance.respawn.behaviourPuppet.BoostImmunity(1000f);
+                    PlayerController.Instance.respawn.puppetMaster.state = PuppetMaster.State.Alive;
+                    PlayerController.Instance.animationController.skaterAnim.enabled = true;
+                    PlayerController.Instance.animationController.ikAnim.enabled = true;
+                    PlayerController.Instance.animationController.ScaleAnimSpeed(1.33f);
+                    PlayerController.Instance.animationController.CrossFadeAnimation(animation, .16f);
+                }
+                else
+                {
+                    if (on_button && Main.settings.selected_anim_index_onbutton[(int)actual_grab] > 0)
+                    {
+                        string animation = animNames[Main.settings.selected_anim_index_onbutton[(int)actual_grab]];
+                        PlayerController.Instance.respawn.behaviourPuppet.BoostImmunity(1000f);
+                        PlayerController.Instance.respawn.puppetMaster.state = PuppetMaster.State.Alive;
+                        PlayerController.Instance.animationController.skaterAnim.enabled = true;
+                        PlayerController.Instance.animationController.ikAnim.enabled = true;
+                        PlayerController.Instance.animationController.ScaleAnimSpeed(1.33f);
+                        PlayerController.Instance.animationController.CrossFadeAnimation(animation, .16f);
+                    }
+                    else
+                    {
+                        PlayerController.Instance.animationController.ForceAnimation("Grab");
+                        PlayerController.Instance.animationController.ScaleAnimSpeed(1f);
+                    }
+                }
+                anim_forced = true;
+            }
+        }
         public static float map01(float value, float min, float max)
         {
             return (value - min) * 1f / (max - min);
@@ -198,8 +228,7 @@ namespace grabs_customizer
 
         void Catch()
         {
-            // PlayerController.Instance.boardController.boardControlTransform.localRotation = Quaternion.Euler(0, 0, 0);
-            // Log(PlayerController.Instance.playerSM.IsInBailStateSM().ToString());
+            PlayerController.Instance.SetKneeBendWeightManually(0f);
             PlayerController.Instance.boardController.CatchRotation();
             PlayerController.Instance.boardController.UpdateBoardPosition();
             PlayerController.Instance.AnimOllieTransition(false);
@@ -228,29 +257,31 @@ namespace grabs_customizer
             PlayerController.Instance.skaterController.skaterRigidbody.AddForce(force, ForceMode.Impulse);
 
             PlayerController.Instance.boardController.UpdateBoardPosition();
+            EventManager.Instance.OnCatched(true, true);
+        }
+
+        void PreventInAirBail()
+        {
+            EventManager.Instance.ExitGrab();
+            PlayerController.Instance.ToggleFlipTrigger(false);
+            PlayerController.Instance.BoardFreezedAfterRespawn = false;
+            PlayerController.Instance.boardController.ResetAll();
+            PlayerController.Instance.boardController.UpdateBoardPosition();
+            PlayerController.Instance.comController.UpdateCOM();
+            PlayerController.Instance.playerSM.OnRespawnSM();
+            PlayerController.Instance.DisableArmPhysics();
+            PlayerController.Instance.ResetIKOffsets();
         }
 
         void PreventBail()
         {
             Log("Prevent Bail");
-            base.StopCoroutine("RespawnRoutine");
             PlayerController.Instance.respawn.behaviourPuppet.StopAllCoroutines();
             PlayerController.Instance.respawn.behaviourPuppet.unpinnedMuscleKnockout = false;
             PlayerController.Instance.respawn.bail.StopAllCoroutines();
             PlayerController.Instance.CancelRespawnInvoke();
             PlayerController.Instance.CancelInvoke("DoBail");
-
-            base.CancelInvoke("DoBail");
             MonoBehaviourSingleton<PlayerController>.Instance.CancelInvoke("DoBail");
-            base.CancelInvoke("PuppetMasterModeActive");
-            base.CancelInvoke("EnableBoardPhysics");
-            base.Invoke("EnableBoardPhysics", 0);
-            base.CancelInvoke("EndRecentRespawn");
-            base.Invoke("EndRecentRespawn", 0);
-            base.CancelInvoke("DelayPress");
-            base.Invoke("DelayPress", 0);
-            base.CancelInvoke("EndRespawning");
-            base.Invoke("EndRespawning", 0);
 
             Transform[] componentsInChildren = MonoBehaviourSingleton<PlayerController>.Instance.ragdollHips.GetComponentsInChildren<Transform>();
             for (int i = 0; i < componentsInChildren.Length; i++)
@@ -260,6 +291,7 @@ namespace grabs_customizer
 
             PlayerController.Instance.respawn.behaviourPuppet.BoostImmunity(1000f);
             PlayerController.Instance.respawn.puppetMaster.state = PuppetMaster.State.Alive;
+            PlayerController.Instance.animationController.ScaleAnimSpeed(1f);
             PlayerController.Instance.ResetAllAnimations();
             PlayerController.Instance.AnimGrindTransition(false);
             PlayerController.Instance.AnimOllieTransition(false);
@@ -268,7 +300,11 @@ namespace grabs_customizer
             PlayerController.Instance.respawn.behaviourPuppet.masterProps.normalMode = BehaviourPuppet.NormalMode.Unmapped;
             PlayerController.Instance.respawn.bail.bailed = false;
 
-            PlayerController.Instance.animationController.CrossFadeAnimation("InAir", .5f);
+            // PlayerController.Instance.boardController.boardRigidbody.gameObject.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
+
+            PlayerController.Instance.skaterController.AddUpwardDisplacement(Time.deltaTime / 1000);
+            PlayerController.Instance.skaterController.UpdateSkaterPosFromComPos();
+            EventManager.Instance.ExitGrab();
 
             reset_values();
         }
@@ -289,27 +325,42 @@ namespace grabs_customizer
             IK();
 
             Vector3 offset = getCustomRotation(actual_grab);
+            offset = offset / 12;
 
-            var rotation = PlayerController.Instance.boardController.gameObject.transform.localRotation;
-            Vector3 lerpedRotation = Vector3.Lerp(rotation.eulerAngles, rotation.eulerAngles + new Vector3(offset.x, offset.y, offset.z), Time.deltaTime * Main.settings.GrabBoardBoned_speed);
+            Vector3 rotation = PlayerController.Instance.boardController.gameObject.transform.localRotation.eulerAngles;
+            Vector3 lerpedRotation;
+
+            float anim = map01(grab_frame, 0, getAnimationLength(actual_grab));
+
+            if (PlayerController.Instance.GetBoardBackwards())
+            {
+                lerpedRotation = Vector3.Lerp(rotation, rotation + new Vector3(-offset.x, offset.y, -offset.z), anim);
+            }
+            else
+            {
+                lerpedRotation = Vector3.Lerp(rotation, rotation + new Vector3(offset.x, offset.y, offset.z), anim);
+            }
             PlayerController.Instance.boardController.gameObject.transform.localRotation = Quaternion.Euler(lerpedRotation.x, lerpedRotation.y, lerpedRotation.z);
             PlayerController.Instance.boardController.boardRigidbody.gameObject.transform.localRotation = PlayerController.Instance.boardController.gameObject.transform.localRotation;
 
             PlayerController.Instance.boardController.UpdateBoardPosition();
-            // PlayerController.Instance.ikController.ForceUpdateIK();
-            PlayerController.Instance.ikController.LeftIKWeight(getLeftWeight());
-            PlayerController.Instance.ikController.RightIKWeight(getRightWeight());
+
+            float left_weight = (float)Traverse.Create(PlayerController.Instance.ikController).Field("_leftPositionWeight").GetValue();
+            PlayerController.Instance.ikController.LeftIKWeight(Mathf.Lerp(left_weight, getLeftWeight(), anim));
+
+            float right_weight = (float)Traverse.Create(PlayerController.Instance.ikController).Field("_rightPositionWeight").GetValue();
+            PlayerController.Instance.ikController.RightIKWeight(Mathf.Lerp(right_weight, getRightWeight(), anim));
 
             PlayerController.Instance.LerpKneeIkWeight();
 
+            // PlayerController.Instance.SetRotationTarget(true);
             PlayerController.Instance.ScalePlayerCollider();
             PlayerController.Instance.boardController.SetBoardControllerUpVector(PlayerController.Instance.skaterController.skaterTransform.up);
             PlayerController.Instance.SnapRotation();
-            PlayerController.Instance.SetRotationTarget(true);
 
-            Vector3 offset_pos = getCustomPosition(actual_grab);
-            PlayerController.Instance.boardController.boardControlTransform.transform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.transform.localPosition, PlayerController.Instance.boardController.boardControlTransform.transform.localPosition + new Vector3(offset_pos.x, offset_pos.y, offset_pos.z), Time.deltaTime * Main.settings.GrabBoardBoned_speed);
             PlayerController.Instance.comController.UpdateCOM();
+
+            grab_frame++;
         }
 
         int getLeftWeight()
@@ -326,10 +377,10 @@ namespace grabs_customizer
 
         void IK()
         {
-            GrabSide side = DetermineSide();
+            //GrabSide side = DetermineSide();
             PlayerController.Instance.ikController._finalIk.solver.iterations = 4;
             PlayerController.Instance.ikController._finalIk.solver.spineMapping.iterations = 4;
-            PlayerController.Instance.ikController.SetHandIKWeight(side == GrabSide.Left ? 1 : 0, side == GrabSide.Right ? 1 : 0);
+            //PlayerController.Instance.ikController.SetHandIKWeight(side == GrabSide.Left ? 1 : 0, side == GrabSide.Right ? 1 : 0);
         }
 
         void UpdateKneeTargets()
@@ -348,6 +399,11 @@ namespace grabs_customizer
             MonoBehaviourSingleton<PlayerController>.Instance.skaterController.rightKneeTarget.position = position2;
         }
 
+        public float getAnimationLength(GrabType grab)
+        {
+            return !on_button ? Main.settings.animation_length[(int)grab] : Main.settings.animation_length_onbutton[(int)grab];
+        }
+
         public Vector3 getCustomRotation(GrabType grab)
         {
             return !on_button ? Main.settings.rotation_offset[(int)grab] : Main.settings.rotation_offset_onbutton[(int)grab];
@@ -360,8 +416,14 @@ namespace grabs_customizer
 
         public void DoGrabOffsetPosition()
         {
+            float anim = map01(grab_frame, 0, getAnimationLength(actual_grab));
             Vector3 offset = getCustomPosition(actual_grab);
-            PlayerController.Instance.boardController.boardControlTransform.transform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.transform.localPosition, PlayerController.Instance.boardController.boardControlTransform.transform.localPosition + new Vector3(offset.x, offset.y, offset.z), Time.deltaTime * Main.settings.GrabBoardBoned_speed);
+            offset = offset * .035f;
+            float angular_multiplier = 1 + (-PlayerController.Instance.skaterController.skaterRigidbody.angularVelocity.y / 2);
+
+            Vector3 target = PlayerController.Instance.boardController.boardControlTransform.transform.localPosition + new Vector3(offset.x, offset.y, offset.z);
+
+            PlayerController.Instance.boardController.boardControlTransform.transform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.transform.localPosition, target, anim);
         }
 
         public void ResetWeights()
@@ -383,14 +445,34 @@ namespace grabs_customizer
 
         private string[] grabNames = new string[] { "Nose Grab", "Indy Grab", "Tail Grab", "Melon Grab", "Mute Grab", "Stalefish" };
 
+        void FootplantRaycast(bool left, bool right)
+        {
+            PlayerController.Instance.skaterController.leftFootCollider.isTrigger = false;
+            RaycastHit hit;
+            if (Physics.Raycast(left_foot.transform.position, Vector3.down, out hit, 0.056f + 1f, layerMask))
+            {
+                if (hit.collider.gameObject.name != "Skater_foot_l" && hit.collider.gameObject.name != "Skater_foot_r" && hit.collider.gameObject.layer != LayerMask.NameToLayer("Skateboard") && hit.collider.gameObject.layer != LayerMask.NameToLayer("Character"))
+                {
+                    Vector3 position = hit.point;
+                    left_foot.transform.position = position;
+                    position.y += 0.025f;
+                    float distance = Vector3.Distance(left_foot.transform.position, position);
+                    if (distance <= 0.09f)
+                    {
+                        PlayerController.Instance.skaterController.skaterRigidbody.velocity = new Vector3(0, 0, 0);
+                        PlayerController.Instance.skaterController.skaterRigidbody.useGravity = false;
+                        return;
+                    }
+                }
+            }
+        }
+
         private enum GrabSide
         {
             Left,
             Right,
             Both
         }
-
-        private GrabSide grab;
 
         private GrabType DetermineGrab()
         {
@@ -474,8 +556,6 @@ namespace grabs_customizer
             {
                 result = GrabType.Indy;
             }
-
-            Log(result.ToString());
 
             return result;
         }

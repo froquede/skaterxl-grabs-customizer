@@ -116,6 +116,18 @@ namespace grabs_customizer
                 settings.selected_anim_index_onbutton = new List<int>(new int[6]);
                 settings.Save(modEntry);
             }
+
+            if (settings.animation_length.Count == 0)
+            {
+                settings.animation_length = new List<int> { 36, 36, 36, 36, 36, 36 };
+                settings.Save(modEntry);
+            }
+
+            if (settings.animation_length_onbutton.Count == 0)
+            {
+                settings.animation_length_onbutton = new List<int> { 36, 36, 36, 36, 36, 36 };
+                settings.Save(modEntry);
+            }
         }
 
         private static void OnGUI(UnityModManager.ModEntry modEntry)
