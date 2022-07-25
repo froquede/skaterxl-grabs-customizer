@@ -27,7 +27,12 @@ namespace grabs_customizer
         public List<bool> right_foot_speed = new List<Boolean>();
         public List<bool> left_foot_speed_onbutton = new List<Boolean>();
         public List<bool> right_foot_speed_onbutton = new List<Boolean>();
-        
+
+        public List<float> left_foot_weight_speed = new List<float>();
+        public List<float> left_foot_weight_speed_onbutton = new List<float>();
+        public List<float> right_foot_weight_speed = new List<float>();
+        public List<float> right_foot_weight_speed_onbutton = new List<float>();
+
         public List<bool> hands = new List<Boolean>();
 
         public List<int> selected_anim_index = new List<int>();

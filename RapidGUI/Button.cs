@@ -23,13 +23,15 @@ namespace RapidGUI
                 if (v)
                 {
                     text = "On";
+                    GUI.backgroundColor = Color.green;
                 }
                 else
                 {
                     text = "Off";
+                    GUI.backgroundColor = Color.black;
                 }
 
-                v = GUILayout.Button("<b>" + text + "</b>", RGUIStyle.button, GUILayout.Width(260f));
+                v = GUILayout.Button("<b>" + text + "</b>", RGUIStyle.button, GUILayout.Width(52f));
             }
 
             return v;

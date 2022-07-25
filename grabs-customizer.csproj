@@ -153,6 +153,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BonedGrabs.cs" />
+    <Compile Include="OnStickPressedPatchStickInput.cs" />
+    <Compile Include="OnStickPressedPatchRelease.cs" />
+    <Compile Include="OnStickPressedPatch.cs" />
     <Compile Include="RapidGUI\Button.cs" />
     <Compile Include="RapidGUI\Field.cs" />
     <Compile Include="RapidGUI\Field\BoolField.cs" />

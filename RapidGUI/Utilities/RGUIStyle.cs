@@ -63,9 +63,10 @@ namespace RapidGUI
             style.hover.textColor = toggle.hover.textColor;
 
             flatButtonTex = new Texture2D(1, 1);
-            flatButtonTex.SetPixels(new[] { new Color(0.5f, 0.5f, 0.5f, 0.5f) });
+            flatButtonTex.SetPixels(new[] { new Color(46f / 255f, 204f / 255f, 113f / 255f, 1f) });
             flatButtonTex.Apply();
             style.hover.background = flatButtonTex;
+            style.hover.textColor = Color.white;
 
             style.name = nameof(flatButton);
             flatButton = style;
@@ -76,7 +77,7 @@ namespace RapidGUI
             var style = new GUIStyle(flatButton)
             {
                 alignment = GUI.skin.label.alignment,
-                padding = new RectOffset(24, 48, 2, 2),
+                padding = new RectOffset(4, 4, 4, 6),
                 name = nameof(popupFlatButton)
             };
 
@@ -91,9 +92,7 @@ namespace RapidGUI
             };
 
             popupTex = new Texture2D(1, 1);
-            var brightness = 0.2f;
-            var alpha = 0.9f;
-            popupTex.SetPixels(new[] { new Color(brightness, brightness, brightness, alpha) });
+            popupTex.SetPixels(new[] { new Color(44f / 255f, 62f / 255f, 80f / 255f, 1f) });
             popupTex.Apply();
 
             style.normal.background =
@@ -184,7 +183,7 @@ namespace RapidGUI
             {
                 richText = true,
                 name = nameof(warningLabelNoStyle)
-            };
+            }; 
 
             warningLabelNoStyle = style;
         }

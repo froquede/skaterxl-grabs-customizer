@@ -19,11 +19,16 @@ namespace grabs_customizer
 
         static bool Unload(UnityModManager.ModEntry modEntry)
         {
-            // harmonyInstance.UnpatchAll();
             UnityEngine.Object.Destroy(BG);
             UnityEngine.Object.Destroy(UI);
             BG = null;
             UI = null;
+
+            try
+            {
+                harmonyInstance.UnpatchAll(harmonyInstance.Id);
+            }
+            catch { }
 
             return true;
         }
@@ -40,7 +45,11 @@ namespace grabs_customizer
             UnityEngine.Object.DontDestroyOnLoad(BG);
             UnityEngine.Object.DontDestroyOnLoad(UI);
 
-            // harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+            try
+            {
+                harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+            }
+            catch { }
 
             modEntry.OnUnload = Unload;
             Main.modEntry = modEntry;
@@ -128,6 +137,28 @@ namespace grabs_customizer
                 settings.animation_length_onbutton = new List<int> { 36, 36, 36, 36, 36, 36 };
                 settings.Save(modEntry);
             }
+
+            if (settings.left_foot_weight_speed.Count == 0)
+            {
+                settings.left_foot_weight_speed = new List<float> { 1, 1, 1, 1, 1, 1 };
+                settings.Save(modEntry);
+            }
+            if (settings.left_foot_weight_speed_onbutton.Count == 0)
+            {
+                settings.left_foot_weight_speed_onbutton = new List<float> { 1, 1, 1, 1, 1, 1 };
+                settings.Save(modEntry);
+            }
+
+            if (settings.right_foot_weight_speed.Count == 0)
+            {
+                settings.right_foot_weight_speed = new List<float> { 1, 1, 1, 1, 1, 1 };
+                settings.Save(modEntry);
+            }
+            if (settings.right_foot_weight_speed_onbutton.Count == 0)
+            {
+                settings.right_foot_weight_speed_onbutton = new List<float> { 1, 1, 1, 1, 1, 1 };
+                settings.Save(modEntry);
+            }
         }
 
         private static void OnGUI(UnityModManager.ModEntry modEntry)
@@ -143,6 +174,18 @@ namespace grabs_customizer
         private static bool OnToggle(UnityModManager.ModEntry modEntry, bool value)
         {
             UnityModManager.Logger.Log("Toggled " + modEntry.Info.Id);
+
+            if (value)
+            {
+                harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+            }
+            else
+            {
+                UnityEngine.Object.Destroy(BG);
+                UnityEngine.Object.Destroy(UI);
+                harmonyInstance.UnpatchAll(harmonyInstance.Id);
+            }
+
             return true;
         }
     }

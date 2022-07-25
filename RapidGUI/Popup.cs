@@ -88,8 +88,10 @@ namespace RapidGUI
                             contentSize.y += textSize.y;
                         }
 
+                        contentSize.y += 4;
+
                         var margin = buttonStyle.margin;
-                        contentSize.y += Mathf.Max(0, displayOptions.Length - 1) * Mathf.Max(margin.top, margin.bottom); // is this right?
+                        // contentSize.y += Mathf.Max(0, displayOptions.Length - 1) * Mathf.Max(margin.top, margin.bottom); // is this right?
 
                         var vbarSkin = GUI.skin.verticalScrollbar;
                         var vbarSize = vbarSkin.CalcScreenSize(Vector2.zero);
