@@ -51,6 +51,9 @@ namespace grabs_customizer
             }
             catch { }
 
+            /*modEntry.OnGUI = OnGUI;
+            modEntry.OnSaveGUI = new Action<UnityModManager.ModEntry>(OnSaveGUI);
+            modEntry.OnToggle = new Func<UnityModManager.ModEntry, bool, bool>(OnToggle);*/
             modEntry.OnUnload = Unload;
             Main.modEntry = modEntry;
 
