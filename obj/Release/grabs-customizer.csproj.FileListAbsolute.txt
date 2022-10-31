@@ -3,3 +3,4 @@ S:\boned-grabs\boned-grabs\bin\Release\grabs-customizer.pdb
 S:\boned-grabs\boned-grabs\obj\Release\grabs-customizer.csproj.CoreCompileInputs.cache
 S:\boned-grabs\boned-grabs\obj\Release\grabs-customizer.dll
 S:\boned-grabs\boned-grabs\obj\Release\grabs-customizer.pdb
+S:\boned-grabs\boned-grabs\obj\Release\grabs-customizer.csproj.AssemblyReference.cache

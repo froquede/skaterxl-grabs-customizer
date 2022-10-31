@@ -63,6 +63,10 @@
       <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\SkaterXL.Data.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="SkaterXL.TrickDetection">
+      <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\SkaterXL.TrickDetection.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
@@ -86,11 +90,6 @@
     </Reference>
     <Reference Include="System.Xml">
       <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="UnityEditor">
-      <HintPath>C:\Program Files\Unity\Hub\Editor\2019.3.5f1\Editor\Data\Managed\UnityEditor.dll</HintPath>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\UnityEngine.dll</HintPath>
@@ -149,6 +148,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BonedGrabs.cs" />
+    <Compile Include="OnStickPressedPatchStickInput.cs" />
+    <Compile Include="OnStickPressedPatchRelease.cs" />
+    <Compile Include="OnStickPressedPatch.cs" />
     <Compile Include="RapidGUI\Button.cs" />
     <Compile Include="RapidGUI\Field.cs" />
     <Compile Include="RapidGUI\Field\BoolField.cs" />

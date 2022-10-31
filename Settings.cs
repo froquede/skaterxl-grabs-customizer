@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -7,34 +8,58 @@ namespace grabs_customizer
     [Serializable]
     public class Settings : UnityModManager.ModSettings, IDrawable
     {
-        [Draw(DrawType.KeyBinding)] public KeyBinding Hotkey = new KeyBinding { keyCode = KeyCode.F6 };
-        [Draw(DrawType.KeyBinding)] public KeyBinding RightCtrlkey = new KeyBinding { keyCode = KeyCode.RightControl };
-        [Draw(DrawType.KeyBinding)] public KeyBinding LeftCtrlkey = new KeyBinding { keyCode = KeyCode.LeftControl };
-
-        public Color BGColor = new Color(0f,0f,0f);
+        [Draw(DrawType.KeyBinding)] public KeyBinding Hotkey = new KeyBinding { keyCode = KeyCode.F4 };
 
         public bool BonedGrab = true;
 
-        public float GrabBoardBoned_x = 0f;
-        public float GrabBoardBoned_y = 0f;
-        public float GrabBoardBoned_z = 0f;
+        public bool continuously_detect = false;
 
-        public float GrabBoardBoned_rotation_x = 0f;
-        public float GrabBoardBoned_rotation_y = 0f;
-        public float GrabBoardBoned_rotation_z = 0f;
+        public List<Vector3> position_offset = new List<Vector3>();
+        public List<Vector3> position_offset_onbutton = new List<Vector3>();
+        public List<Vector3> position_offset_leftstick = new List<Vector3>();
+
+        public List<Vector3> rotation_offset = new List<Vector3>();
+        public List<Vector3> rotation_offset_onbutton = new List<Vector3>();
+        public List<Vector3> rotation_offset_leftstick = new List<Vector3>();
 
         public float GrabBoardBoned_speed = 3f;
-
         public float GrabBoardBoned_left_speed = 1f;
         public float GrabBoardBoned_right_speed = 1f;
 
-        public float GrabBoardBoned_left_knee = 1f;
-        public float GrabBoardBoned_right_knee = 1f;
+        public List<bool> left_foot_speed = new List<Boolean>();
+        public List<bool> right_foot_speed = new List<Boolean>();
+        public List<bool> left_foot_speed_onbutton = new List<Boolean>();
+        public List<bool> right_foot_speed_onbutton = new List<Boolean>();
+        public List<bool> left_foot_speed_leftstick = new List<Boolean>();
+        public List<bool> right_foot_speed_leftstick = new List<Boolean>();
 
-        public float GrabBoardBoned_left_hand_speed = 1f;
-        public float GrabBoardBoned_right_hand_speed = 1f;
+        public List<bool> hands = new List<Boolean>();
 
-        public int GrabBoardBoned_animation_frames = 36;
+        public List<int> animation_length = new List<int>();
+        public List<int> animation_length_onbutton = new List<int>();
+        public List<int> animation_length_leftstick = new List<int>();
+        public List<int> animation_detach_length = new List<int>();
+        public List<int> animation_detach_length_onbutton = new List<int>();
+        public List<int> animation_detach_length_leftstick = new List<int>();
+
+        public List<string> detach_feet = new List<string>();
+        public List<string> detach_feet_onbutton = new List<string>();
+        public List<string> detach_feet_leftstick = new List<string>();
+
+        public List<Vector3> detach_left = new List<Vector3>();
+        public List<Vector3> detach_left_onbutton = new List<Vector3>();
+        public List<Vector3> detach_left_leftstick = new List<Vector3>();
+
+        public List<Vector3> detach_right = new List<Vector3>();
+        public List<Vector3> detach_right_onbutton = new List<Vector3>();
+        public List<Vector3> detach_right_leftstick = new List<Vector3>();
+
+        public int hand_animation_length = 12;
+
+        public bool config_mode = false;
+        public bool catch_anytime = false;
+
+        public float kneeBendWeight = .25f;
 
         public void OnChange()
         {
