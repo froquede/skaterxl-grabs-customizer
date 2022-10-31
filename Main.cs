@@ -75,6 +75,12 @@ namespace grabs_customizer
                 settings.Save(modEntry);
             }
 
+            if (settings.position_offset_leftstick.Count == 0)
+            {
+                settings.position_offset_leftstick = new List<Vector3>(new Vector3[6]);
+                settings.Save(modEntry);
+            }
+
             if (settings.rotation_offset.Count == 0)
             {
                 settings.rotation_offset = new List<Vector3>(new Vector3[6]);
@@ -84,6 +90,12 @@ namespace grabs_customizer
             if (settings.rotation_offset_onbutton.Count == 0)
             {
                 settings.rotation_offset_onbutton = new List<Vector3>(new Vector3[6]);
+                settings.Save(modEntry);
+            }
+
+            if (settings.rotation_offset_leftstick.Count == 0)
+            {
+                settings.rotation_offset_leftstick = new List<Vector3>(new Vector3[6]);
                 settings.Save(modEntry);
             }
 
@@ -99,6 +111,12 @@ namespace grabs_customizer
                 settings.Save(modEntry);
             }
 
+            if (settings.left_foot_speed_leftstick.Count == 0)
+            {
+                settings.left_foot_speed_leftstick = new List<Boolean>(new Boolean[6]);
+                settings.Save(modEntry);
+            }
+
             if (settings.right_foot_speed.Count == 0)
             {
                 settings.right_foot_speed = new List<Boolean>(new Boolean[6]);
@@ -111,21 +129,15 @@ namespace grabs_customizer
                 settings.Save(modEntry);
             }
 
+            if (settings.right_foot_speed_leftstick.Count == 0)
+            {
+                settings.right_foot_speed_leftstick = new List<Boolean>(new Boolean[6]);
+                settings.Save(modEntry);
+            }
+
             if (settings.hands.Count == 0)
             {
                 settings.hands = new List<Boolean>(new Boolean[6]);
-                settings.Save(modEntry);
-            }
-
-            if (settings.selected_anim_index.Count == 0)
-            {
-                settings.selected_anim_index = new List<int>(new int[6]);
-                settings.Save(modEntry);
-            }
-
-            if (settings.selected_anim_index_onbutton.Count == 0)
-            {
-                settings.selected_anim_index_onbutton = new List<int>(new int[6]);
                 settings.Save(modEntry);
             }
 
@@ -141,27 +153,105 @@ namespace grabs_customizer
                 settings.Save(modEntry);
             }
 
-            if (settings.left_foot_weight_speed.Count == 0)
+            if (settings.animation_length_leftstick.Count == 0)
             {
-                settings.left_foot_weight_speed = new List<float> { 1, 1, 1, 1, 1, 1 };
-                settings.Save(modEntry);
-            }
-            if (settings.left_foot_weight_speed_onbutton.Count == 0)
-            {
-                settings.left_foot_weight_speed_onbutton = new List<float> { 1, 1, 1, 1, 1, 1 };
+                settings.animation_length_leftstick = new List<int> { 36, 36, 36, 36, 36, 36 };
                 settings.Save(modEntry);
             }
 
-            if (settings.right_foot_weight_speed.Count == 0)
+            if (settings.animation_detach_length.Count == 0)
             {
-                settings.right_foot_weight_speed = new List<float> { 1, 1, 1, 1, 1, 1 };
+                settings.animation_detach_length = new List<int> { 36, 36, 36, 36, 36, 36 };
                 settings.Save(modEntry);
             }
-            if (settings.right_foot_weight_speed_onbutton.Count == 0)
+
+            if (settings.animation_detach_length_onbutton.Count == 0)
             {
-                settings.right_foot_weight_speed_onbutton = new List<float> { 1, 1, 1, 1, 1, 1 };
+                settings.animation_detach_length_onbutton = new List<int> { 36, 36, 36, 36, 36, 36 };
                 settings.Save(modEntry);
             }
+
+            if (settings.animation_detach_length_leftstick.Count == 0)
+            {
+                settings.animation_detach_length_leftstick = new List<int> { 36, 36, 36, 36, 36, 36 };
+                settings.Save(modEntry);
+            }
+
+            if (settings.detach_feet.Count == 0)
+            {
+                settings.detach_feet = new List<string> { getNormalDetach(0), getNormalDetach(1), getNormalDetach(2), getNormalDetach(3), getNormalDetach(4), getNormalDetach(5) };
+                settings.Save(modEntry);
+            }
+
+            if (settings.detach_feet_onbutton.Count == 0)
+            {
+                settings.detach_feet_onbutton = new List<string> { getPressedDetach(0), getPressedDetach(1), getPressedDetach(2), getPressedDetach(3), getPressedDetach(4), getPressedDetach(5) };
+                settings.Save(modEntry);
+            }
+
+            if (settings.detach_feet_leftstick.Count == 0)
+            {
+                settings.detach_feet_leftstick = new List<string> { "None", "None", "None", "None", "None", "None" };
+                settings.Save(modEntry);
+            }
+
+            Vector3 detach_default_l = new Vector3(0, -2, .5f);
+            if (settings.detach_left.Count == 0)
+            {
+                settings.detach_left = new List<Vector3>{ detach_default_l, detach_default_l, detach_default_l, detach_default_l, detach_default_l, detach_default_l };
+                settings.Save(modEntry);
+            }
+
+            if (settings.detach_left_onbutton.Count == 0)
+            {
+                settings.detach_left_onbutton = new List<Vector3> { detach_default_l, detach_default_l, detach_default_l, detach_default_l, detach_default_l, detach_default_l };
+                settings.Save(modEntry);
+            }
+
+            if (settings.detach_left_leftstick.Count == 0)
+            {
+                settings.detach_left_leftstick = new List<Vector3> { detach_default_l, detach_default_l, detach_default_l, detach_default_l, detach_default_l, detach_default_l };
+                settings.Save(modEntry);
+            }
+
+            Vector3 detach_default_r = new Vector3(0, -2, -.5f);
+            if (settings.detach_right.Count == 0)
+            {
+                settings.detach_right = new List<Vector3> { detach_default_r, detach_default_r, detach_default_r, detach_default_r, detach_default_r, detach_default_r };
+                settings.Save(modEntry);
+            }
+
+            if (settings.detach_right_onbutton.Count == 0)
+            {
+                settings.detach_right_onbutton = new List<Vector3> { detach_default_r, detach_default_r, detach_default_r, detach_default_r, detach_default_r, detach_default_r };
+                settings.Save(modEntry);
+            }
+
+            if (settings.detach_right_leftstick.Count == 0)
+            {
+                settings.detach_right_leftstick = new List<Vector3> { detach_default_r, detach_default_r, detach_default_r, detach_default_r, detach_default_r, detach_default_r };
+                settings.Save(modEntry);
+            }
+        }
+
+        static string getNormalDetach(int i)
+        {
+            string result = "None";
+            if (settings.left_foot_speed[i]) result = "Left";
+            if (settings.right_foot_speed[i]) result = "Right";
+            if (settings.left_foot_speed[i] && settings.right_foot_speed[0]) result = "Both";
+
+            return result;
+        }
+
+        static string getPressedDetach(int i)
+        {
+            string result = "None";
+            if (settings.left_foot_speed_onbutton[i]) result = "Left";
+            if (settings.right_foot_speed_onbutton[i]) result = "Right";
+            if (settings.left_foot_speed_onbutton[i] && settings.right_foot_speed_onbutton[0]) result = "Both";
+
+            return result;
         }
 
         private static void OnGUI(UnityModManager.ModEntry modEntry)

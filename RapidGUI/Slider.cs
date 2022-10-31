@@ -28,12 +28,29 @@ namespace RapidGUI
         {
             GUI.backgroundColor = Color.white;
             GUILayout.BeginHorizontal();
-            GUILayout.Label("<b>" + label + "</b>", GUILayout.MinWidth(SliderSetting.minWidth));
+            GUILayout.Label(label, GUILayout.MinWidth(SliderSetting.minWidth));
             var ret = GUILayout.HorizontalSlider(v, min, max, GUILayout.MinWidth(SliderSetting.minWidth));
             ret = (float)StandardField(ret, v.GetType(), GUILayout.Width(SliderSetting.fieldWidth));
 
             GUI.backgroundColor = Color.black;
             if (GUILayout.Button("<b>Reset</b>", GUILayout.Height(21f), GUILayout.ExpandWidth(false)))
+            {
+                ret = defaultValue;
+            }
+            GUILayout.EndHorizontal();
+            return ret;
+        }
+
+        public static float SliderFloatCompact(float v, float min, float max, float defaultValue, string label = null)
+        {
+            GUI.backgroundColor = Color.white;
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(label, GUILayout.Width(12));
+            var ret = GUILayout.HorizontalSlider(v, min, max, GUILayout.Width(42));
+            ret = (float)StandardField(ret, v.GetType(), GUILayout.Width(36));
+
+            GUI.backgroundColor = Color.black;
+            if (GUILayout.Button("<b>R</b>", GUILayout.Height(21f), GUILayout.Width(28)))
             {
                 ret = defaultValue;
             }
