@@ -136,7 +136,7 @@ namespace grabs_customizer
             GUI.backgroundColor = Color.black;
             //GUI.DragWindow(new Rect(0, 0, 10000, 20));
             GUILayout.Space(18);
-            GUILayout.Label("v1.7.0");
+            GUILayout.Label("v1.7.2");
             GUILayout.Space(14);
             GUILayout.BeginVertical();
 
@@ -311,7 +311,7 @@ namespace grabs_customizer
             GUILayout.Space(4);
             /* GUILayout.EndVertical();
              GUILayout.BeginVertical("Box");*/
-            if (RGUI.Button(Main.settings.catch_anytime, "<color=#718093>Catch at any moment (experimental)</color>"))
+            if (RGUI.Button(Main.settings.catch_anytime, "<color=#718093>Catch board at any moment</color>"))
             {
                 Main.settings.catch_anytime = !Main.settings.catch_anytime;
             }

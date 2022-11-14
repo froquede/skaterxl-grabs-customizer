@@ -14,8 +14,6 @@ namespace grabs_customizer
 
         LayerMask layerMask = ~(1 << LayerMask.NameToLayer("Skateboard"));
 
-        int run;
-        int limit = 36;
         string last_state;
         bool save_last_pos = true;
         bool debug = false;
@@ -48,7 +46,6 @@ namespace grabs_customizer
 
         void reset()
         {
-            run = limit + 1;
             PlayerController.Instance.playerSM.StartSM();
             PlayerController.Instance.respawn.DoRespawn();
         }
@@ -59,6 +56,25 @@ namespace grabs_customizer
             determine_grab = true;
             save_last_pos = true;
             anim_forced = false;
+            fakegrab_started = false;
+
+            if (last_state == PlayerController.CurrentState.Grabs.ToString() && !PlayerController.Instance.respawn.respawning)
+            {
+                EventManager.Instance.OnCatched(true, true);
+                EventManager.Instance.EndTrickCombo(false, false);
+                PlayerController.Instance.EnableArmPhysics();
+                PlayerController.Instance.SetHandIKWeight(0f, 0f);
+                PlayerController.Instance.ikController.ForceLeftLerpValue(0);
+                PlayerController.Instance.ikController.ForceRightLerpValue(0);
+                PlayerController.Instance.AnimSetGrabToeside(false);
+                PlayerController.Instance.AnimSetGrabHeelside(false);
+                PlayerController.Instance.AnimSetGrabNose(false);
+                PlayerController.Instance.AnimSetGrabTail(false);
+                PlayerController.Instance.AnimSetGrabStale(false);
+                PlayerController.Instance.AnimSetGrabMute(false);
+                PlayerController.Instance.ikController.LeftIKWeight(1f);
+                PlayerController.Instance.ikController.RightIKWeight(1f);
+            }
         }
 
         string[] animNames = new string[] { "Disabled", "Falling", "InAir", "Riding" };
@@ -110,40 +126,16 @@ namespace grabs_customizer
                 }
             }
 
-            if (!IsGrabbing() && run <= limit)
-            {
-                if (run == 0)
-                {
-                    reset_values();
-
-                    EventManager.Instance.ExitGrab();
-                    PlayerController.Instance.EnableArmPhysics();
-                    PlayerController.Instance.SetHandIKWeight(0f, 0f);
-                    PlayerController.Instance.AnimSetGrabToeside(false);
-                    PlayerController.Instance.AnimSetGrabHeelside(false);
-                    PlayerController.Instance.AnimSetGrabNose(false);
-                    PlayerController.Instance.AnimSetGrabTail(false);
-                    PlayerController.Instance.AnimSetGrabStale(false);
-                    PlayerController.Instance.AnimSetGrabMute(false);
-                    PlayerController.Instance.ikController.LeftIKWeight(1f);
-                    PlayerController.Instance.ikController.RightIKWeight(1f);
-                }
-                else
-                {
-                    if (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
-                    PlayerController.Instance.boardController.boardControlTransform.localPosition = Vector3.Lerp(PlayerController.Instance.boardController.boardControlTransform.localPosition, last_pos, map01(run, 1, limit));
-                }
-            }
-
             if (IsGrabbing())
             {
                 if (determine_grab)
                 {
                     actual_grab = DetermineGrab();
                     determine_grab = false;
-                    PlayerController.Instance.CorrectHandIKRotation(PlayerController.Instance.boardController.IsBoardBackwards);
                     PlayerController.Instance.DisableArmPhysics();
+                    PlayerController.Instance.boardController.UpdateBoardPosition();
                     PlayerController.Instance.SetHandIKTarget(actual_grab);
+                    PlayerController.Instance.CorrectHandIKRotation(PlayerController.Instance.GetBoardBackwards());
                 }
             }
             /*else
@@ -167,7 +159,6 @@ namespace grabs_customizer
                 PlayerController.Instance.boardController.boardRigidbody.AddForce(0, -Physics.gravity.y / 70f, 0, ForceMode.Impulse);
                 PlayerController.Instance.skaterController.skaterRigidbody.AddForce(0, -Physics.gravity.y / 125f, 0, ForceMode.Impulse);
             }
-            LogState();
 
             if (save_last_pos)
             {
@@ -177,24 +168,22 @@ namespace grabs_customizer
 
             if (Main.settings.catch_anytime && !fakegrab_started)
             {
-                if (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Pop || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.InAir || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Release)
+                if (last_state == PlayerController.CurrentState.Pop.ToString() || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.InAir || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Release)
                 {
                     if (PlayerController.Instance.inputController.player.GetButton("LB") || PlayerController.Instance.inputController.player.GetButton("RB"))
                     {
-                        //UnityModManager.Logger.Log("Fake grab");
-                        //actual_grab = DetermineGrab();
                         PlayerController.Instance.boardController.currentRotationTarget = PlayerController.Instance.boardController.gameObject.transform.rotation;
                         PlayerController.Instance.ResetAllAnimationsExceptSpeed();
                         PlayerController.Instance.ToggleFlipColliders(false);
-                        //PlayerController.Instance.DisableArmPhysics();
-                        PlayerController.Instance.CorrectHandIKRotation(PlayerController.Instance.GetBoardBackwards());
-                        PlayerController.Instance.SetIKOnOff(1f);
                         PlayerController.Instance.ResetIKOffsets();
-                        PlayerController.Instance.boardController.SetCatchForwardRotation();
-
-                        //EventManager.Instance.StartGrab(actual_grab);
+                        PlayerController.Instance.SetIKOnOff(1f);
                         PlayerController.Instance.currentStateEnum = PlayerController.CurrentState.Grabs;
-                        PlayerController.Instance.currentState = PlayerController.CurrentState.Grabs.ToString();
+                        EventManager.Instance.OnCatched(true, true);
+                        PlayerController.Instance.boardController.SetBoardBackwards();
+                        PlayerController.Instance.CorrectHandIKRotation(PlayerController.Instance.GetBoardBackwards());
+                        PlayerController.Instance.boardController.CatchRotation();
+                        PlayerController.Instance.boardController.SetCatchForwardRotation();
+                        PlayerController.Instance.boardController.UpdateBoardPosition();
 
                         fakegrab_started = true;
                         determine_grab = true;
@@ -211,7 +200,6 @@ namespace grabs_customizer
 
                 if (lastGrabSide != grabSide && grabSide != GrabSide.Both) actual_grab = DetermineGrab(false);
 
-                run = 0;
                 save_last_pos = false;
 
                 DoGrabOffsetPosition();
@@ -229,25 +217,25 @@ namespace grabs_customizer
                 float anim = map01(grab_frame, 0, length);
                 anim = anim > 1 ? 1 : anim;
 
-                float hand_anim = map01(grab_frame, 0, Main.settings.hand_animation_length);
+                float hand_anim = map01(grab_frame, 0, Main.settings.hand_animation_length - 1);
                 hand_anim = hand_anim > 1 ? 1 : hand_anim;
 
                 if (grabSide == GrabSide.Left || grabSide == GrabSide.Both)
                 {
-                    leftWeight = Mathf.Lerp(PlayerController.Instance.ikController.leftHandWeight, 1, hand_anim);
+                    leftWeight = Mathf.Lerp(PlayerController.Instance.ikController._finalIk.solver.leftHandEffector.positionWeight, 1, hand_anim);
                 }
                 else
                 {
-                    leftWeight = Mathf.Lerp(PlayerController.Instance.ikController.leftHandWeight, 0, hand_anim);
+                    leftWeight = Mathf.Lerp(PlayerController.Instance.ikController._finalIk.solver.leftHandEffector.positionWeight, 0, hand_anim);
                 }
 
                 if (grabSide == GrabSide.Right || grabSide == GrabSide.Both)
                 {
-                    rightWeight = Mathf.Lerp(PlayerController.Instance.ikController.rightHandWeight, 1, hand_anim);
+                    rightWeight = Mathf.Lerp(PlayerController.Instance.ikController._finalIk.solver.rightHandEffector.positionWeight, 1, hand_anim);
                 }
                 else
                 {
-                    rightWeight = Mathf.Lerp(PlayerController.Instance.ikController.rightHandWeight, 0, hand_anim);
+                    rightWeight = Mathf.Lerp(PlayerController.Instance.ikController._finalIk.solver.rightHandEffector.positionWeight, 0, hand_anim);
                 }
 
                 PlayerController.Instance.SetHandIKWeight(leftWeight, rightWeight);
@@ -262,22 +250,16 @@ namespace grabs_customizer
                 grab_frame = 0;
                 leftWeight = 0;
                 rightWeight = 0;
-                fakegrab_started = false;
 
-                if (run <= limit)
-                {
-                    if (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
-                }
-
-                run++;
+                if (last_state == PlayerController.CurrentState.Grabs.ToString() && PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
             }
 
-            if (IsGrounded() && run <= limit)
+            if (PlayerController.Instance.currentStateEnum != PlayerController.CurrentState.Grabs)
             {
                 reset_values();
-                PreventBail();
-                run = limit + 2;
             }
+
+            LogState();
         }
 
         void InAirControl()
@@ -300,16 +282,6 @@ namespace grabs_customizer
             return;
         }
 
-        private void LateUpdate()
-        {
-            if (!Main.settings.BonedGrab) return;
-
-            if (!IsGrabbing() && run <= limit)
-            {
-                if (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
-            }
-        }
-
         public static float map01(float value, float min, float max)
         {
             return (value - min) * 1f / (max - min);
@@ -330,6 +302,7 @@ namespace grabs_customizer
 
         void PreventBail()
         {
+            if (PlayerController.Instance.respawn.respawning) return;
             PlayerController.Instance.respawn.behaviourPuppet.StopAllCoroutines();
             PlayerController.Instance.respawn.behaviourPuppet.unpinnedMuscleKnockout = false;
             PlayerController.Instance.respawn.bail.StopAllCoroutines();
@@ -356,9 +329,7 @@ namespace grabs_customizer
 
             PlayerController.Instance.skaterController.AddUpwardDisplacement(Time.deltaTime / 1000);
             PlayerController.Instance.skaterController.UpdateSkaterPosFromComPos();
-            EventManager.Instance.ExitGrab();
-
-            reset_values();
+            if (last_state == PlayerController.CurrentState.Grabs.ToString()) EventManager.Instance.ExitGrab();
         }
 
 
@@ -555,12 +526,12 @@ namespace grabs_customizer
             lerped_left_weight = Mathf.Lerp(weight_origin_left, getLeftWeight(), anim_detach);
             lerped_right_weight = Mathf.Lerp(weight_origin_right, getRightWeight(), anim_detach);
 
-            UnityModManager.Logger.Log(weight_origin_left + " " + getLeftWeight() + " " + anim_detach);
+            //UnityModManager.Logger.Log(weight_origin_left + " " + getLeftWeight() + " " + anim_detach);
 
-            Traverse.Create(PlayerController.Instance.ikController).Field("_ikLeftRotLerp").SetValue(1 - lerped_left_weight);
+            /*Traverse.Create(PlayerController.Instance.ikController).Field("_ikLeftRotLerp").SetValue(1 - lerped_left_weight);
             Traverse.Create(PlayerController.Instance.ikController).Field("_ikRightRotLerp").SetValue(1 - lerped_right_weight);
             Traverse.Create(PlayerController.Instance.ikController).Field("_leftPositionWeight").SetValue(1 - lerped_left_weight);
-            Traverse.Create(PlayerController.Instance.ikController).Field("_rightPositionWeight").SetValue(1 - lerped_right_weight);
+            Traverse.Create(PlayerController.Instance.ikController).Field("_rightPositionWeight").SetValue(1 - lerped_right_weight);*/
 
             if (getLeftWeight() == 0)
             {
@@ -661,16 +632,25 @@ namespace grabs_customizer
         {
             GrabType result = GrabType.Indy;
             if (determineSide) grabSide = DetermineSide();
+
             if (grabSide != GrabSide.Left)
             {
                 if (grabSide == GrabSide.Right)
                 {
                     if (this.CanGrabNoseOrTail())
                     {
-                        if (SettingsManager.Instance.stance == Stance.Regular)
+                        if (MonoBehaviourSingleton<SettingsManager>.Instance.stance == Stance.Regular)
                         {
-                            PlayerController.Instance.AnimSetGrabTail(true);
-                            result = GrabType.TailGrab;
+                            if (PlayerController.Instance.GetRightForwardAxis() < -0.3f || PlayerController.Instance.GetLeftForwardAxis() < -0.3f)
+                            {
+                                PlayerController.Instance.AnimSetGrabNose(true);
+                                result = GrabType.NoseGrab;
+                            }
+                            else if (PlayerController.Instance.GetRightForwardAxis() > 0.3f || PlayerController.Instance.GetLeftForwardAxis() > 0.3f)
+                            {
+                                PlayerController.Instance.AnimSetGrabTail(true);
+                                result = GrabType.TailGrab;
+                            }
                         }
                         else
                         {
@@ -705,12 +685,17 @@ namespace grabs_customizer
             }
             else if (this.CanGrabNoseOrTail())
             {
-                if (SettingsManager.Instance.stance == Stance.Regular)
+                if (MonoBehaviourSingleton<SettingsManager>.Instance.stance == Stance.Regular)
                 {
                     PlayerController.Instance.AnimSetGrabNose(true);
                     result = GrabType.NoseGrab;
                 }
-                else
+                else if (PlayerController.Instance.GetLeftForwardAxis() < -0.3f)
+                {
+                    PlayerController.Instance.AnimSetGrabNose(true);
+                    result = GrabType.NoseGrab;
+                }
+                else if (PlayerController.Instance.GetLeftForwardAxis() > 0.3f)
                 {
                     PlayerController.Instance.AnimSetGrabTail(true);
                     result = GrabType.TailGrab;
@@ -759,81 +744,77 @@ namespace grabs_customizer
 
         private bool CanGrabNoseOrTail()
         {
-            float forward = PlayerController.Instance.GetLeftForwardAxis() + PlayerController.Instance.GetRightForwardAxis();
-            float left = Mathf.Abs(PlayerController.Instance.GetLeftToeAxis());
-            float right = Mathf.Abs(PlayerController.Instance.GetRightToeAxis());
-
-            return (forward < -0.3f || forward > 0.3f) && left < 0.4f && right < 0.4f;
+            return (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftForwardAxis() + MonoBehaviourSingleton<PlayerController>.Instance.GetRightForwardAxis() < -0.3f || MonoBehaviourSingleton<PlayerController>.Instance.GetLeftForwardAxis() + MonoBehaviourSingleton<PlayerController>.Instance.GetRightForwardAxis() > 0.3f) && Mathf.Abs(MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis()) < 0.4f && Mathf.Abs(MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis()) < 0.4f;
         }
 
         private bool CanStaleOrMute()
         {
             bool result = false;
-            switch (SettingsManager.Instance.controlType)
+            switch (MonoBehaviourSingleton<SettingsManager>.Instance.controlType)
             {
                 case ControlType.Same:
-                    if (SettingsManager.Instance.stance == Stance.Regular)
+                    if (MonoBehaviourSingleton<SettingsManager>.Instance.stance == Stance.Regular)
                     {
-                        if (PlayerController.Instance.GetLeftToeAxis() < -0.5f && PlayerController.Instance.GetRightToeAxis() > 0.5f)
+                        if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() < -0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() > 0.5f)
                         {
                             result = true;
                         }
                     }
-                    else if (PlayerController.Instance.GetLeftToeAxis() > 0.5f && PlayerController.Instance.GetRightToeAxis() < -0.5f)
+                    else if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() > 0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() < -0.5f)
                     {
                         result = true;
                     }
                     break;
                 case ControlType.Swap:
-                    if (!PlayerController.Instance.IsSwitch)
+                    if (!MonoBehaviourSingleton<PlayerController>.Instance.IsSwitch)
                     {
-                        if (SettingsManager.Instance.stance == Stance.Regular)
+                        if (MonoBehaviourSingleton<SettingsManager>.Instance.stance == Stance.Regular)
                         {
-                            if (PlayerController.Instance.GetLeftToeAxis() < -0.5f && PlayerController.Instance.GetRightToeAxis() > 0.5f)
+                            if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() < -0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() > 0.5f)
                             {
                                 result = true;
                             }
                         }
-                        else if (PlayerController.Instance.GetLeftToeAxis() > 0.5f && PlayerController.Instance.GetRightToeAxis() < -0.5f)
+                        else if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() > 0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() < -0.5f)
                         {
                             result = true;
                         }
                     }
-                    else if (SettingsManager.Instance.stance == Stance.Regular)
+                    else if (MonoBehaviourSingleton<SettingsManager>.Instance.stance == Stance.Regular)
                     {
-                        if (PlayerController.Instance.GetLeftToeAxis() > 0.5f && PlayerController.Instance.GetRightToeAxis() < -0.5f)
+                        if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() > 0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() < -0.5f)
                         {
                             result = true;
                         }
                     }
-                    else if (PlayerController.Instance.GetLeftToeAxis() < -0.5f && PlayerController.Instance.GetRightToeAxis() > 0.5f)
+                    else if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() < -0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() > 0.5f)
                     {
                         result = true;
                     }
                     break;
                 case ControlType.Simple:
-                    if (!PlayerController.Instance.IsSwitch)
+                    if (!MonoBehaviourSingleton<PlayerController>.Instance.IsSwitch)
                     {
-                        if (SettingsManager.Instance.stance == Stance.Regular)
+                        if (MonoBehaviourSingleton<SettingsManager>.Instance.stance == Stance.Regular)
                         {
-                            if (PlayerController.Instance.GetLeftToeAxis() < -0.5f && PlayerController.Instance.GetRightToeAxis() > 0.5f)
+                            if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() < -0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() > 0.5f)
                             {
                                 result = true;
                             }
                         }
-                        else if (PlayerController.Instance.GetLeftToeAxis() > 0.5f && PlayerController.Instance.GetRightToeAxis() < -0.5f)
+                        else if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() > 0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() < -0.5f)
                         {
                             result = true;
                         }
                     }
-                    else if (SettingsManager.Instance.stance == Stance.Regular)
+                    else if (MonoBehaviourSingleton<SettingsManager>.Instance.stance == Stance.Regular)
                     {
-                        if (PlayerController.Instance.GetLeftToeAxis() > 0.5f && PlayerController.Instance.GetRightToeAxis() < -0.5f)
+                        if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() > 0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() < -0.5f)
                         {
                             result = true;
                         }
                     }
-                    else if (PlayerController.Instance.GetLeftToeAxis() < -0.5f && PlayerController.Instance.GetRightToeAxis() > 0.5f)
+                    else if (MonoBehaviourSingleton<PlayerController>.Instance.GetLeftToeAxis() < -0.5f && MonoBehaviourSingleton<PlayerController>.Instance.GetRightToeAxis() > 0.5f)
                     {
                         result = true;
                     }

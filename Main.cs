@@ -16,7 +16,6 @@ namespace grabs_customizer
         public static BonedGrabs BG;
         public static UIController UI;
         public static UnityModManager.ModEntry modEntry;
-
         static bool Unload(UnityModManager.ModEntry modEntry)
         {
             UnityEngine.Object.Destroy(BG);
