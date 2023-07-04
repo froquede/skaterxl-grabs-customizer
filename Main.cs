@@ -20,14 +20,8 @@ namespace grabs_customizer
         {
             UnityEngine.Object.Destroy(BG);
             UnityEngine.Object.Destroy(UI);
-            BG = null;
-            UI = null;
 
-            try
-            {
-                harmonyInstance.UnpatchAll(harmonyInstance.Id);
-            }
-            catch { }
+            harmonyInstance.UnpatchAll(harmonyInstance.Id);
 
             return true;
         }
@@ -44,17 +38,13 @@ namespace grabs_customizer
             UnityEngine.Object.DontDestroyOnLoad(BG);
             UnityEngine.Object.DontDestroyOnLoad(UI);
 
-            try
-            {
-                harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
-            }
-            catch { }
-
             /*modEntry.OnGUI = OnGUI;
-            modEntry.OnSaveGUI = new Action<UnityModManager.ModEntry>(OnSaveGUI);
-            modEntry.OnToggle = new Func<UnityModManager.ModEntry, bool, bool>(OnToggle);*/
+            modEntry.OnSaveGUI = new Action<UnityModManager.ModEntry>(OnSaveGUI);*/
+            /*modEntry.OnToggle = OnToggle;*/
             modEntry.OnUnload = Unload;
             Main.modEntry = modEntry;
+
+            harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
 
             UnityModManager.Logger.Log("Loaded " + modEntry.Info.Id);
             return true;
@@ -160,19 +150,19 @@ namespace grabs_customizer
 
             if (settings.animation_detach_length.Count == 0)
             {
-                settings.animation_detach_length = new List<int> { 36, 36, 36, 36, 36, 36 };
+                settings.animation_detach_length = new List<int> { 24, 24, 24, 24, 24, 24 };
                 settings.Save(modEntry);
             }
 
             if (settings.animation_detach_length_onbutton.Count == 0)
             {
-                settings.animation_detach_length_onbutton = new List<int> { 36, 36, 36, 36, 36, 36 };
+                settings.animation_detach_length_onbutton = new List<int> { 24, 24, 24, 24, 24, 24 };
                 settings.Save(modEntry);
             }
 
             if (settings.animation_detach_length_leftstick.Count == 0)
             {
-                settings.animation_detach_length_leftstick = new List<int> { 36, 36, 36, 36, 36, 36 };
+                settings.animation_detach_length_leftstick = new List<int> { 24, 24, 24, 24, 24, 24 };
                 settings.Save(modEntry);
             }
 

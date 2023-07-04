@@ -1,10 +1,11 @@
-﻿using System;
+﻿using HarmonyLib;
+using RootMotion.Dynamics;
+using SkaterXL.Core;
+using System;
+using TMPro;
 using UnityEngine;
 using UnityModManagerNet;
-using SkaterXL.Core;
-using RootMotion.Dynamics;
-using RootMotion.FinalIK;
-using HarmonyLib;
+using VacuumBreather;
 
 namespace grabs_customizer
 {
@@ -57,6 +58,10 @@ namespace grabs_customizer
             save_last_pos = true;
             anim_forced = false;
             fakegrab_started = false;
+            hand_frame = 0;
+            grab_frame = 0;
+            leftWeight = 0;
+            rightWeight = 0;
 
             if (last_state == PlayerController.CurrentState.Grabs.ToString() && !PlayerController.Instance.respawn.respawning)
             {
@@ -80,6 +85,7 @@ namespace grabs_customizer
         string[] animNames = new string[] { "Disabled", "Falling", "InAir", "Riding" };
         bool switch_origin = false;
         string actual_input = "";
+        Quaternion last_rot;
 
         private void Update()
         {
@@ -128,31 +134,54 @@ namespace grabs_customizer
 
             if (IsGrabbing())
             {
+                PlayerController.Instance.boardController.currentCatchRotationTarget = PlayerController.Instance.boardController.boardTransform.rotation;
+
                 if (determine_grab)
                 {
                     actual_grab = DetermineGrab();
                     determine_grab = false;
-                    PlayerController.Instance.DisableArmPhysics();
-                    PlayerController.Instance.boardController.UpdateBoardPosition();
-                    PlayerController.Instance.SetHandIKTarget(actual_grab);
-                    PlayerController.Instance.CorrectHandIKRotation(PlayerController.Instance.GetBoardBackwards());
                 }
+
+                PlayerController.Instance.DisableArmPhysics();
+                PlayerController.Instance.SetHandIKTarget(actual_grab);
+                PlayerController.Instance.CorrectHandIKRotation(backwards);
             }
-            /*else
+            else
             {
-                if (IsInAir() && run == 0)
-                {
-                    PreventInAirBail();
-                }
-            }*/
+                leftWeight = Mathf.SmoothStep(leftWeight, 0f, Time.deltaTime);
+                rightWeight = Mathf.SmoothStep(rightWeight, 0f, Time.deltaTime);
+            }
+
+            if (!IsGrounded())
+            {
+                last_rot = PlayerController.Instance.boardController.boardRigidbody.transform.rotation;
+            }
         }
 
-        float leftWeight = 0, rightWeight = 0, hand_frame = 0;
+        public float leftWeight = 0, rightWeight = 0, hand_frame = 0;
         bool fakegrab_started = false;
+        bool backwards = false;
+        bool pressed = false;
+        public Quaternion last_targetRot;
+        PidQuaternionController _pidRotController = new PidQuaternionController(8f, 0f, 0.05f);
+
         public void FixedUpdate()
         {
-
             if (!Main.settings.BonedGrab) return;
+
+            if (ToggleState() && PlayerController.Instance.inputController.player.GetButtonLongPress("LB") && PlayerController.Instance.inputController.player.GetButtonLongPress("RB"))
+            {
+                if (!pressed)
+                {
+                    Main.settings.config_mode = !Main.settings.config_mode;
+                    NotificationManager.Instance.ShowNotification($"Grabs config mode { (Main.settings.config_mode ? "enabled" : "disabled") }", 1f, false, NotificationManager.NotificationType.Normal, TextAlignmentOptions.TopRight, 0.1f);
+                    pressed = true;
+                }
+            }
+            else
+            {
+                pressed = false;
+            }
 
             if (Main.settings.config_mode)
             {
@@ -176,14 +205,14 @@ namespace grabs_customizer
                         PlayerController.Instance.ResetAllAnimationsExceptSpeed();
                         PlayerController.Instance.ToggleFlipColliders(false);
                         PlayerController.Instance.ResetIKOffsets();
-                        PlayerController.Instance.SetIKOnOff(1f);
+                        SetIKOnOff(0.4f);
                         PlayerController.Instance.currentStateEnum = PlayerController.CurrentState.Grabs;
                         EventManager.Instance.OnCatched(true, true);
-                        PlayerController.Instance.boardController.SetBoardBackwards();
-                        PlayerController.Instance.CorrectHandIKRotation(PlayerController.Instance.GetBoardBackwards());
-                        PlayerController.Instance.boardController.CatchRotation();
-                        PlayerController.Instance.boardController.SetCatchForwardRotation();
-                        PlayerController.Instance.boardController.UpdateBoardPosition();
+                        SetBoardBackwards();
+                        PlayerController.Instance.CorrectHandIKRotation(backwards);
+                        //PlayerController.Instance.boardController.CatchRotation();
+                        //PlayerController.Instance.boardController.SetCatchForwardRotation();
+                        //PlayerController.Instance.boardController.UpdateBoardPosition();
 
                         fakegrab_started = true;
                         determine_grab = true;
@@ -222,23 +251,33 @@ namespace grabs_customizer
 
                 if (grabSide == GrabSide.Left || grabSide == GrabSide.Both)
                 {
-                    leftWeight = Mathf.Lerp(PlayerController.Instance.ikController._finalIk.solver.leftHandEffector.positionWeight, 1, hand_anim);
+                    leftWeight = Mathf.SmoothStep(leftWeight, 1, hand_anim);
                 }
                 else
                 {
-                    leftWeight = Mathf.Lerp(PlayerController.Instance.ikController._finalIk.solver.leftHandEffector.positionWeight, 0, hand_anim);
+                    leftWeight = Mathf.SmoothStep(leftWeight, 0, hand_anim);
                 }
 
                 if (grabSide == GrabSide.Right || grabSide == GrabSide.Both)
                 {
-                    rightWeight = Mathf.Lerp(PlayerController.Instance.ikController._finalIk.solver.rightHandEffector.positionWeight, 1, hand_anim);
+                    rightWeight = Mathf.SmoothStep(rightWeight, 1, hand_anim);
                 }
                 else
                 {
-                    rightWeight = Mathf.Lerp(PlayerController.Instance.ikController._finalIk.solver.rightHandEffector.positionWeight, 0, hand_anim);
+                    rightWeight = Mathf.SmoothStep(rightWeight, 0, hand_anim);
                 }
 
-                PlayerController.Instance.SetHandIKWeight(leftWeight, rightWeight);
+                if (Main.BG.leftWeight >= .9f || Main.BG.rightWeight >= .9f)
+                {
+                    
+                }
+                else {
+                    PlayerController.Instance.boardController.firstVel /= 1.05f;
+                    PlayerController.Instance.boardController.thirdVel /= 1.01f;
+                    PlayerController.Instance.FlipTrickRotation();
+                }
+
+                PlayerController.Instance.ikController.SetHandIKWeight(leftWeight, rightWeight);
                 PlayerController.Instance.LerpKneeIkWeight();
 
                 grab_frame++;
@@ -246,15 +285,10 @@ namespace grabs_customizer
             }
             else
             {
-                hand_frame = 0;
-                grab_frame = 0;
-                leftWeight = 0;
-                rightWeight = 0;
-
                 if (last_state == PlayerController.CurrentState.Grabs.ToString() && PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Bailed) PreventBail();
             }
 
-            if (PlayerController.Instance.currentStateEnum != PlayerController.CurrentState.Grabs)
+            if (PlayerController.Instance.currentStateEnum != PlayerController.CurrentState.Grabs || (!PlayerController.Instance.inputController.player.GetButton("LB") && !PlayerController.Instance.inputController.player.GetButton("RB")))
             {
                 reset_values();
             }
@@ -262,42 +296,109 @@ namespace grabs_customizer
             LogState();
         }
 
-        void InAirControl()
+        void SetIKOnOff(float p_value)
         {
+            IKController ik = PlayerController.Instance.ikController;
+            float random_left = p_value + UnityEngine.Random.Range(-.2f, .2f);
+            float random_right = p_value + UnityEngine.Random.Range(-.2f, .2f);
 
-            if (SettingsManager.Instance.stance == Stance.Regular)
+            Traverse.Create(PlayerController.Instance.ikController).Field("_leftPositionWeight").SetValue(random_left);
+            Traverse.Create(PlayerController.Instance.ikController).Field("_leftRotationWeight").SetValue(0);
+            Traverse.Create(PlayerController.Instance.ikController).Field("_rightPositionWeight").SetValue(random_right);
+            Traverse.Create(PlayerController.Instance.ikController).Field("_rightRotationWeight").SetValue(0);
+
+            ik._finalIk.solver.leftFootEffector.positionWeight = random_left;
+            ik._finalIk.solver.rightFootEffector.positionWeight = random_right;
+            ik._finalIk.solver.rightFootEffector.rotationWeight = ik._finalIk.solver.leftFootEffector.rotationWeight = 0f;
+        }
+
+        bool ToggleState()
+        {
+            return (PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Pushing || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Riding || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Impact);
+        }
+
+        void SetBoardBackwards()
+        {
+            Transform skater = PlayerController.Instance.skaterController.skaterTransform;
+            Transform board = PlayerController.Instance.boardController.boardTransform;
+
+            Vector3 upBoardProjected = Vector3.ProjectOnPlane(board.up, skater.forward);
+            float boardToSkateRelative = Vector3.Angle(upBoardProjected, skater.up);
+            Vector3 projected = Vector3.Cross(board.forward, Vector3.ProjectOnPlane(boardToSkateRelative > 90f ? -board.right : board.right, skater.up));
+            projected = Vector3.ProjectOnPlane(projected, skater.right);
+
+            float angleUp = Vector3.Angle(projected, skater.up);
+            float angleFwd = Vector3.Angle(projected, skater.forward);
+
+            Log(angleUp + " " + angleFwd + " " + boardToSkateRelative);
+
+            if (angleUp > 30f)
             {
-                PlayerController.Instance.SetBoardTargetPosition(Mathf.Abs(PlayerController.Instance.inputController.LeftStick.rawInput.pos.x) - Mathf.Abs(PlayerController.Instance.inputController.RightStick.rawInput.pos.x));
-                PlayerController.Instance.SetFrontPivotRotation(PlayerController.Instance.inputController.RightStick.ToeAxis);
-                PlayerController.Instance.SetBackPivotRotation(PlayerController.Instance.inputController.LeftStick.ToeAxis);
-                PlayerController.Instance.SetPivotForwardRotation((PlayerController.Instance.inputController.LeftStick.ForwardDir + PlayerController.Instance.inputController.RightStick.ForwardDir) * 0.7f, 15f);
-                PlayerController.Instance.SetPivotSideRotation(PlayerController.Instance.inputController.LeftStick.ToeAxis - PlayerController.Instance.inputController.RightStick.ToeAxis);
-                return;
+                Vector3 planeNormal = Quaternion.AngleAxis(angleFwd < 90f ? -60f : 60f, skater.right) * skater.up;
+                projected = Vector3.ProjectOnPlane(projected, planeNormal);
             }
-            PlayerController.Instance.SetBoardTargetPosition(Mathf.Abs(PlayerController.Instance.inputController.RightStick.rawInput.pos.x) - Mathf.Abs(PlayerController.Instance.inputController.LeftStick.rawInput.pos.x));
-            PlayerController.Instance.SetFrontPivotRotation(-PlayerController.Instance.inputController.LeftStick.ToeAxis);
-            PlayerController.Instance.SetBackPivotRotation(-PlayerController.Instance.inputController.RightStick.ToeAxis);
-            PlayerController.Instance.SetPivotForwardRotation((PlayerController.Instance.inputController.LeftStick.ForwardDir + PlayerController.Instance.inputController.RightStick.ForwardDir) * 0.7f, 15f);
-            PlayerController.Instance.SetPivotSideRotation(PlayerController.Instance.inputController.LeftStick.ToeAxis - PlayerController.Instance.inputController.RightStick.ToeAxis, 20f);
-            return;
+            if (Vector3.Angle(Vector3.ProjectOnPlane(Vector3.ProjectOnPlane(Vector3.ProjectOnPlane(board.forward, projected), skater.right), projected), PlayerController.Instance.PlayerForward()) < 90f)
+            {
+                PlayerController.Instance.boardController.IsBoardBackwards = backwards = false;
+            }
+            else PlayerController.Instance.boardController.IsBoardBackwards = backwards = true;
+        }
+
+        private float CompareYAngle(Quaternion originRotation, Quaternion currentRotation)
+        {
+            // Convert the quaternions to Euler angles
+            Vector3 originEulerAngles = originRotation.eulerAngles;
+            Vector3 currentEulerAngles = currentRotation.eulerAngles;
+
+            // Normalize Euler angles to -180 to 180 range
+            originEulerAngles.x = NormalizeAngle(originEulerAngles.x);
+            originEulerAngles.y = NormalizeAngle(originEulerAngles.y);
+            originEulerAngles.z = NormalizeAngle(originEulerAngles.z);
+
+            currentEulerAngles.x = NormalizeAngle(currentEulerAngles.x);
+            currentEulerAngles.y = NormalizeAngle(currentEulerAngles.y);
+            currentEulerAngles.z = NormalizeAngle(currentEulerAngles.z);
+
+            // Set the x and z angles to 0
+            originEulerAngles.x = 0;
+            originEulerAngles.z = 0;
+
+            currentEulerAngles.x = 0;
+            currentEulerAngles.z = 0;
+
+            float yAngleDifference = currentEulerAngles.y - originEulerAngles.y;
+
+            // Account for full rotations
+            if (yAngleDifference > 180)
+            {
+                yAngleDifference -= 360;
+            }
+            else if (yAngleDifference < -180)
+            {
+                yAngleDifference += 360;
+            }
+
+            return yAngleDifference;
+        }
+
+        private float NormalizeAngle(float angle)
+        {
+            while (angle > 180)
+            {
+                angle -= 360;
+            }
+
+            while (angle < -180)
+            {
+                angle += 360;
+            }
+
+            return angle;
         }
 
         public static float map01(float value, float min, float max)
         {
             return (value - min) * 1f / (max - min);
-        }
-
-        void PreventInAirBail()
-        {
-            EventManager.Instance.ExitGrab();
-            PlayerController.Instance.ToggleFlipTrigger(false);
-            PlayerController.Instance.BoardFreezedAfterRespawn = false;
-            PlayerController.Instance.boardController.ResetAll();
-            PlayerController.Instance.boardController.UpdateBoardPosition();
-            //PlayerController.Instance.comController.UpdateCOM();
-            PlayerController.Instance.playerSM.OnRespawnSM();
-            //PlayerController.Instance.DisableArmPhysics();
-            //PlayerController.Instance.ResetIKOffsets();
         }
 
         void PreventBail()
@@ -393,8 +494,8 @@ namespace grabs_customizer
 
         void IK()
         {
-            PlayerController.Instance.ikController._finalIk.solver.iterations = 4;
-            PlayerController.Instance.ikController._finalIk.solver.spineMapping.iterations = 4;
+            PlayerController.Instance.ikController._finalIk.solver.iterations = 8;
+            PlayerController.Instance.ikController._finalIk.solver.spineMapping.iterations = 8;
         }
 
         public float getDetachAnimationLength(GrabType grab)
@@ -487,7 +588,7 @@ namespace grabs_customizer
                 if (last_input == "left") origin = getCustomRotationOnLeftStick(actual_grab) / 12;
             }
 
-            if (PlayerController.Instance.GetBoardBackwards())
+            if (backwards)
             {
                 lerpedRotation = Vector3.Slerp(origin, new Vector3(-offset.x, offset.y, -offset.z), anim);
             }
@@ -501,8 +602,8 @@ namespace grabs_customizer
 
             // PlayerController.Instance.SetRotationTarget(true);
             PlayerController.Instance.ScalePlayerCollider();
-            PlayerController.Instance.boardController.SetBoardControllerUpVector(PlayerController.Instance.skaterController.skaterTransform.up);
-            PlayerController.Instance.SnapRotation();
+            //PlayerController.Instance.boardController.SetBoardControllerUpVector(PlayerController.Instance.skaterController.skaterTransform.up);
+            //PlayerController.Instance.SnapRotation();
 
             //PlayerController.Instance.comController.UpdateCOM();
         }
@@ -512,7 +613,6 @@ namespace grabs_customizer
         {
             float anim_detach = map01(grab_frame, 0, getDetachAnimationLength(actual_grab));
             anim_detach = anim_detach > 1 ? 1 : anim_detach;
-            PlayerController.Instance.SetIKOnOff(anim_detach);
 
             int weight_origin_left = 1, weight_origin_right = 1;
 
@@ -523,41 +623,58 @@ namespace grabs_customizer
             if (last_input == "left") weight_origin_right = getDetachOnLeftStick_Right((int)actual_grab);
             if (last_input == "right") weight_origin_right = getDetachOnButton_Right((int)actual_grab);
 
-            lerped_left_weight = Mathf.Lerp(weight_origin_left, getLeftWeight(), anim_detach);
-            lerped_right_weight = Mathf.Lerp(weight_origin_right, getRightWeight(), anim_detach);
+            lerped_left_weight = Mathf.SmoothStep(weight_origin_left, getLeftWeight(), anim_detach);
+            lerped_right_weight = Mathf.SmoothStep(weight_origin_right, getRightWeight(), anim_detach);
 
-            //UnityModManager.Logger.Log(weight_origin_left + " " + getLeftWeight() + " " + anim_detach);
-
-            /*Traverse.Create(PlayerController.Instance.ikController).Field("_ikLeftRotLerp").SetValue(1 - lerped_left_weight);
-            Traverse.Create(PlayerController.Instance.ikController).Field("_ikRightRotLerp").SetValue(1 - lerped_right_weight);
-            Traverse.Create(PlayerController.Instance.ikController).Field("_leftPositionWeight").SetValue(1 - lerped_left_weight);
-            Traverse.Create(PlayerController.Instance.ikController).Field("_rightPositionWeight").SetValue(1 - lerped_right_weight);*/
+            IKController ik = PlayerController.Instance.ikController;
 
             if (getLeftWeight() == 0)
             {
-                Vector3 l_offset = GetLeftFootOffset();
-                GameObject pcopyl = new GameObject();
-                pcopyl.transform.position = pelvis.transform.position;
-                pcopyl.transform.rotation = pelvis.transform.rotation;
-                pcopyl.transform.Translate(l_offset.x, l_offset.y, l_offset.z, Space.Self);
-                Transform left_target = (Transform)Traverse.Create(PlayerController.Instance.ikController).Field("ikAnimLeftFootTarget").GetValue();
-                left_target.position = pcopyl.transform.position;
-                Destroy(pcopyl);
-                PlayerController.Instance.ikController.ForceLeftLerpValue(lerped_left_weight);
+                Transform right_target = (Transform)Traverse.Create(PlayerController.Instance.ikController).Field("ikAnimLeftFootTarget").GetValue();
+                right_target.position = TranslateWithRotation(pelvis.transform.position, GetLeftFootOffset(), pelvis.transform.rotation);
+
+                ik._finalIk.solver.leftFootEffector.positionWeight = Mathf.SmoothStep(ik._finalIk.solver.leftFootEffector.positionWeight, 1f, anim_detach);
+                ik._finalIk.solver.leftFootEffector.rotationWeight = Mathf.SmoothStep(ik._finalIk.solver.leftFootEffector.rotationWeight, 0f, anim_detach);
+
+                ik.ForceLeftLerpValue(lerped_left_weight);
+                Traverse.Create(PlayerController.Instance.ikController).Field("_leftRotationWeight").SetValue(ik._finalIk.solver.leftFootEffector.rotationWeight);
+                Traverse.Create(PlayerController.Instance.ikController).Field("_ikLeftRotLerp").SetValue(ik._finalIk.solver.leftFootEffector.rotationWeight);
+            }
+            else
+            {
+                if (leftWeight >= .1f || rightWeight >= .1f) { 
+                    ik._finalIk.solver.leftFootEffector.positionWeight = Mathf.SmoothStep(ik._finalIk.solver.leftFootEffector.positionWeight, 1f, Time.smoothDeltaTime * 4f);
+                    ik._finalIk.solver.leftFootEffector.rotationWeight = Mathf.SmoothStep(ik._finalIk.solver.leftFootEffector.rotationWeight, 1f, Time.smoothDeltaTime * 4f);
+                } 
             }
 
             if (getRightWeight() == 0)
             {
-                Vector3 r_offset = GetRightFootOffset();
-                GameObject pcopyr = new GameObject();
-                pcopyr.transform.position = pelvis.transform.position;
-                pcopyr.transform.rotation = pelvis.transform.rotation;
-                pcopyr.transform.Translate(r_offset.x, r_offset.y, r_offset.z, Space.Self);
                 Transform right_target = (Transform)Traverse.Create(PlayerController.Instance.ikController).Field("ikAnimRightFootTarget").GetValue();
-                right_target.position = pcopyr.transform.position;
-                Destroy(pcopyr);
-                PlayerController.Instance.ikController.ForceRightLerpValue(lerped_right_weight);
+                right_target.position = TranslateWithRotation(pelvis.transform.position, GetRightFootOffset(), pelvis.transform.rotation);
+
+                ik._finalIk.solver.rightFootEffector.positionWeight = Mathf.SmoothStep(ik._finalIk.solver.rightFootEffector.positionWeight, 1f, anim_detach);
+                ik._finalIk.solver.rightFootEffector.rotationWeight = Mathf.SmoothStep(ik._finalIk.solver.rightFootEffector.rotationWeight, 0f, anim_detach);
+
+                ik.ForceRightLerpValue(lerped_right_weight);
+                Traverse.Create(PlayerController.Instance.ikController).Field("_rightRotationWeight").SetValue(ik._finalIk.solver.rightFootEffector.rotationWeight);
+                Traverse.Create(PlayerController.Instance.ikController).Field("_ikRightRotLerp").SetValue(ik._finalIk.solver.leftFootEffector.rotationWeight);
             }
+            else
+            {
+                if (leftWeight >= .1f || rightWeight >= .1f)
+                {
+                    ik._finalIk.solver.rightFootEffector.positionWeight = Mathf.SmoothStep(ik._finalIk.solver.rightFootEffector.positionWeight, 1f, Time.smoothDeltaTime * 4f);
+                    ik._finalIk.solver.rightFootEffector.rotationWeight = Mathf.SmoothStep(ik._finalIk.solver.rightFootEffector.rotationWeight, 1f, Time.smoothDeltaTime * 4f);
+                }
+            }
+        }
+
+        public static Vector3 TranslateWithRotation(Vector3 input, Vector3 translation, Quaternion rotation)
+        {
+            Vector3 rotatedTranslation = rotation * translation;
+            Vector3 output = input + rotatedTranslation;
+            return output;
         }
 
         Vector3 GetLeftFootOffset()
@@ -584,16 +701,16 @@ namespace grabs_customizer
         }
 
         public bool IsInAir() { return PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.InAir; }
-        public bool IsGrabbing() { return PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Grabs || EventManager.Instance.IsGrabbing; }
+        public bool IsGrabbing() { return PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Grabs || EventManager.Instance.IsGrabbing || fakegrab_started; }
 
         public bool IsGrounded()
         {
             return PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Riding || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Setup || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Manual || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Powerslide || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Pushing || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Braking || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Impact || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.Grinding || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.EnterCoping || PlayerController.Instance.currentStateEnum == PlayerController.CurrentState.ExitCoping;
         }
 
-        void Log(String text)
+        void Log(System.Object text)
         {
-            if (debug == true) UnityModManager.Logger.Log(text);
+            UnityModManager.Logger.Log(text.ToString());
         }
 
         private string[] grabNames = new string[] { "Nose Grab", "Indy Grab", "Tail Grab", "Melon Grab", "Mute Grab", "Stalefish" };
@@ -627,7 +744,7 @@ namespace grabs_customizer
             Both
         }
 
-        GrabSide grabSide, lastGrabSide;
+        public GrabSide grabSide, lastGrabSide;
         private GrabType DetermineGrab(bool determineSide = true)
         {
             GrabType result = GrabType.Indy;

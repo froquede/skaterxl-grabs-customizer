@@ -91,6 +91,9 @@
     <Reference Include="System.Xml">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>..\..\..\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>T:\SteamLibrary\steamapps\common\Skater XL\SkaterXL_Data\Managed\UnityEngine.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -147,10 +150,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BoardControllerPatch.cs" />
     <Compile Include="BonedGrabs.cs" />
-    <Compile Include="OnStickPressedPatchStickInput.cs" />
-    <Compile Include="OnStickPressedPatchRelease.cs" />
-    <Compile Include="OnStickPressedPatch.cs" />
     <Compile Include="RapidGUI\Button.cs" />
     <Compile Include="RapidGUI\Field.cs" />
     <Compile Include="RapidGUI\Field\BoolField.cs" />

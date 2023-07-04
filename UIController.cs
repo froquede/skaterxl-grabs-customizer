@@ -136,7 +136,7 @@ namespace grabs_customizer
             GUI.backgroundColor = Color.black;
             //GUI.DragWindow(new Rect(0, 0, 10000, 20));
             GUILayout.Space(18);
-            GUILayout.Label("v1.7.2");
+            GUILayout.Label("v1.8.0");
             GUILayout.Space(14);
             GUILayout.BeginVertical();
 
@@ -227,12 +227,12 @@ namespace grabs_customizer
 
             if (!on_pressed)
             {
-                if (leftstick) Main.settings.animation_detach_length_leftstick[selected_grab_index] = (int)RGUI.SliderFloat(Main.settings.animation_detach_length_leftstick[selected_grab_index], 1, 60f, 36f, "<b>Detach animation length</b>");
-                else Main.settings.animation_detach_length[selected_grab_index] = (int)RGUI.SliderFloat(Main.settings.animation_detach_length[selected_grab_index], 1, 60f, 36f, "<b>Detach animation length</b>");
+                if (leftstick) Main.settings.animation_detach_length_leftstick[selected_grab_index] = (int)RGUI.SliderFloat(Main.settings.animation_detach_length_leftstick[selected_grab_index], 1, 60f, 24f, "<b>Detach animation length</b>");
+                else Main.settings.animation_detach_length[selected_grab_index] = (int)RGUI.SliderFloat(Main.settings.animation_detach_length[selected_grab_index], 1, 60f, 24f, "<b>Detach animation length</b>");
             }
             else
             {
-                Main.settings.animation_detach_length_onbutton[selected_grab_index] = (int)RGUI.SliderFloat(Main.settings.animation_detach_length_onbutton[selected_grab_index], 1, 60f, 36f, "<b>Detach animation length</b>");
+                Main.settings.animation_detach_length_onbutton[selected_grab_index] = (int)RGUI.SliderFloat(Main.settings.animation_detach_length_onbutton[selected_grab_index], 1, 60f, 24f, "<b>Detach animation length</b>");
             }
 
             GUILayout.Space(6);
@@ -298,8 +298,8 @@ namespace grabs_customizer
 
             GUILayout.BeginVertical("Box");*/
 
-            Main.settings.hand_animation_length = (int)RGUI.SliderFloat(Main.settings.hand_animation_length, 1, 60, 12, "<b><color=#718093>Hand animation length</color></b>");
-            Main.settings.kneeBendWeight = RGUI.SliderFloat(Main.settings.kneeBendWeight, 0, 1, .25f, "<b><color=#718093>Knee bend weight</color></b>");
+            Main.settings.hand_animation_length = (int)RGUI.SliderFloat(Main.settings.hand_animation_length, 1, 60, 48, "<b><color=#718093>Hand animation length</color></b>");
+            Main.settings.kneeBendWeight = RGUI.SliderFloat(Main.settings.kneeBendWeight, 0, 1, .7f, "<b><color=#718093>Knee bend weight</color></b>");
             GUILayout.Space(4);
 
             if (RGUI.Button(Main.settings.continuously_detect, "<color=#718093>Continuously detect grab</color>"))
